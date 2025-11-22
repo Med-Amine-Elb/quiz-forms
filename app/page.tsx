@@ -3,6 +3,11 @@
 import { useEffect, useRef, useState } from 'react'
 import gsap from 'gsap'
 import Avatar3D from '@/src/components/Avatar3D'
+import AnimatedBackground from '@/components/ui/AnimatedBackground'
+import QuestionPage from '@/components/questions/QuestionPage'
+import QuestionRenderer from '@/components/questions/QuestionRenderer'
+import { useQuestionNavigation } from '@/hooks/useQuestionNavigation'
+import QuestionNavigator from '@/components/dev/QuestionNavigator'
 
 export default function SurveyLanding() {
   const containerRef = useRef(null)
@@ -17,14 +22,23 @@ export default function SurveyLanding() {
   const avatarRef = useRef(null)
   const currentPageRef = useRef(null)
   const nextPageRef = useRef(null)
-  const questionNumberRef = useRef(null)
-  const questionTextRef = useRef(null)
   const nextPageAvatarRef = useRef(null)
   const loaderRef = useRef(null)
   const [submitted, setSubmitted] = useState(false)
   const [showError, setShowError] = useState(false)
   const [showNextPage, setShowNextPage] = useState(false)
   const [showLoader, setShowLoader] = useState(false)
+  
+  // Question navigation hook
+  const {
+    currentQuestion,
+    currentQuestionIndex,
+    goToNextQuestion,
+    goToQuestion,
+    isLastQuestion,
+  } = useQuestionNavigation()
+  
+  const questionContentRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     // Small delay to ensure refs are ready
@@ -53,6 +67,51 @@ export default function SurveyLanding() {
 
     return () => clearTimeout(timer)
   }, [])
+
+  // Smooth transition between questions
+  useEffect(() => {
+    if (showNextPage && currentQuestion && nextPageRef.current && currentQuestionIndex > 0) {
+      // Reset states for smooth transition
+      if (questionContentRef.current) {
+        gsap.set(questionContentRef.current, { opacity: 0, y: 30 })
+      }
+      if (nextPageAvatarRef.current) {
+        gsap.set(nextPageAvatarRef.current, { opacity: 0 })
+      }
+
+      // Create smooth slide transition
+      const transitionTimeline = gsap.timeline()
+      
+      // Slide out previous question to left
+      transitionTimeline.to(nextPageRef.current, {
+        x: '-100%',
+        opacity: 0,
+        duration: 0.4,
+        ease: 'power2.in',
+      })
+      // Slide in new question from right
+      .set(nextPageRef.current, { x: '100%', opacity: 0 })
+      .to(nextPageRef.current, {
+        x: '0%',
+        opacity: 1,
+        duration: 0.6,
+        ease: 'power3.out',
+      })
+      // Wait for AnimatedQuestionHeader to complete, then fade in content
+      .to(questionContentRef.current, {
+        opacity: 1,
+        y: 0,
+        duration: 0.8,
+        ease: 'power2.out',
+      }, '+=1.2')
+      // Fade in character 3D
+      .to(nextPageAvatarRef.current, {
+        opacity: 1,
+        duration: 1,
+        ease: 'power2.out',
+      }, '-=0.3')
+    }
+  }, [currentQuestionIndex, showNextPage, currentQuestion])
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -172,155 +231,143 @@ export default function SurveyLanding() {
   }
 
   const slideToNextPage = () => {
-    // Fade out current page smoothly first
+    // Optimized transition - reduced delays and simplified animation
     if (currentPageRef.current) {
       // Ensure current page is visible and positioned correctly
       gsap.set(currentPageRef.current, { opacity: 1, x: '0%', zIndex: 2 })
       
-      // Create a smooth fade out timeline
-      const fadeOutTimeline = gsap.timeline({
+      // Show loader immediately
+      setShowLoader(true)
+      
+      // Create a single optimized timeline
+      const masterTimeline = gsap.timeline({
         onComplete: () => {
-          // Move page off screen after fade completes
+          // Clean up
           gsap.set(currentPageRef.current, { x: '100%', zIndex: 1 })
-          
-          // Show loader
-          setShowLoader(true)
-          
-          // Small delay to show loader
-          setTimeout(() => {
-            if (loaderRef.current) {
-              gsap.fromTo(
-                loaderRef.current,
-                { opacity: 0 },
-                { opacity: 1, duration: 0.6, ease: 'power2.out' }
-              )
-            }
-            
-            // After loader appears, show next page and start loading
-            setTimeout(() => {
-              setShowNextPage(true)
-              
-              // Small delay to ensure DOM is ready
-              setTimeout(() => {
-                if (nextPageRef.current && currentPageRef.current) {
-                  // Set z-index: next page behind, current page on top
-                  gsap.set(nextPageRef.current, { zIndex: 1, x: '0%', opacity: 0 })
-                  
-                  // Set initial states for question elements
-                  if (questionNumberRef.current) {
-                    gsap.set(questionNumberRef.current, { opacity: 0.6, y: 0 })
-                  }
-                  if (questionTextRef.current) {
-                    gsap.set(questionTextRef.current, { opacity: 0, y: 20 })
-                  }
-                  if (nextPageAvatarRef.current) {
-                    gsap.set(nextPageAvatarRef.current, { opacity: 0 })
-                  }
-                  
-                  // Fade out loader
-                  if (loaderRef.current) {
-                    gsap.to(loaderRef.current, {
-                      opacity: 0,
-                      duration: 0.4,
-                      ease: 'power2.in',
-                      onComplete: () => {
-                        setShowLoader(false)
-                      }
-                    })
-                  }
-                  
-                  // Bring next page to front
-                  gsap.set(nextPageRef.current, { zIndex: 2 })
-                  
-                  // Create animation timeline
-                  const nextPageTimeline = gsap.timeline()
-                  
-                  // Fade in next page background
-                  nextPageTimeline
-                    .to(nextPageRef.current, {
-                      opacity: 1,
-                      duration: 0.6,
-                      ease: 'power2.out',
-                    })
-                    // Fade in question number
-                    .to(questionNumberRef.current, {
-                      opacity: 0.6,
-                      duration: 0.5,
-                      ease: 'power2.out',
-                    }, '-=0.3')
-                    // Fade out question number and fade in question text
-                    .to(questionNumberRef.current, {
-                      opacity: 0,
-                      y: -20,
-                      duration: 1,
-                      ease: 'power2.out',
-                    }, '+=0.3')
-                    .to(questionTextRef.current, {
-                      opacity: 1,
-                      y: 0,
-                      duration: 1,
-                      ease: 'power2.out',
-                    }, '-=0.5')
-                    // Fade in character after text
-                    .to(nextPageAvatarRef.current, {
-                      opacity: 1,
-                      duration: 1,
-                      ease: 'power2.out',
-                    }, '-=0.3')
-                }
-              }, 100)
-            }, 800) // Show loader for 800ms
-          }, 100)
+          setShowLoader(false)
         }
       })
       
-      // Add smooth fade out animation to timeline
-      fadeOutTimeline.to(currentPageRef.current, {
+      // Fade out current page (faster)
+      masterTimeline.to(currentPageRef.current, {
         opacity: 0,
-        duration: 0.8,
-        ease: 'power3.out',
+        duration: 0.4,
+        ease: 'power2.out',
       })
-    }
-  }
-
-  const handlePushComplete = () => {
-    // Slide current page out to the right
-    if (currentPageRef.current) {
-      gsap.to(currentPageRef.current, {
-        x: '100%',
-        duration: 1,
-        ease: 'power2.inOut',
-        onComplete: () => {
-          setShowNextPage(true)
-          // Animate next page sliding in from left
-          if (nextPageRef.current) {
-            gsap.fromTo(
-              nextPageRef.current,
-              { x: '-100%' },
-              {
-                x: '0%',
-                duration: 1,
-                ease: 'power2.inOut',
-              }
-            )
-          }
+      
+      // Show loader quickly
+      masterTimeline.call(() => {
+        if (loaderRef.current) {
+          gsap.set(loaderRef.current, { opacity: 1 })
         }
       })
+      
+      // Show next page and prepare it
+      masterTimeline.call(() => {
+        setShowNextPage(true)
+      }, [], '+=0.2') // Small delay to ensure DOM is ready
+      
+      // Slide in next page (faster and smoother)
+      masterTimeline.call(() => {
+        if (nextPageRef.current) {
+          // Set initial states
+          gsap.set(nextPageRef.current, { 
+            x: '100%', 
+            opacity: 0, 
+            zIndex: 2,
+            willChange: 'transform, opacity'
+          })
+          
+          // Set initial states for question elements
+          if (questionContentRef.current) {
+            gsap.set(questionContentRef.current, { opacity: 0, y: 20 })
+          }
+          if (nextPageAvatarRef.current) {
+            gsap.set(nextPageAvatarRef.current, { opacity: 0 })
+          }
+          
+          // Fade out loader
+          if (loaderRef.current) {
+            gsap.to(loaderRef.current, {
+              opacity: 0,
+              duration: 0.3,
+              ease: 'power2.in',
+            })
+          }
+          
+          // Slide in next page with fade (faster)
+          gsap.to(nextPageRef.current, {
+            x: '0%',
+            opacity: 1,
+            duration: 0.5,
+            ease: 'power2.out',
+            onComplete: () => {
+              // Fade in content after page is visible (faster)
+              if (questionContentRef.current) {
+                gsap.to(questionContentRef.current, {
+                  opacity: 1,
+                  y: 0,
+                  duration: 0.5,
+                  ease: 'power2.out',
+                  delay: 0.3, // Wait for header animation
+                })
+              }
+              
+              // Fade in avatar (faster)
+              if (nextPageAvatarRef.current) {
+                gsap.to(nextPageAvatarRef.current, {
+                  opacity: 1,
+                  duration: 0.6,
+                  ease: 'power2.out',
+                  delay: 0.2,
+                })
+              }
+            }
+          })
+        }
+      }, [], '+=0.3') // Minimal delay
     }
   }
 
+  // Removed handlePushComplete - no right-sliding pages
+  // All transitions now use slideToNextPage which slides from right to left
+
   return (
-    <div className="w-full h-screen overflow-hidden relative">
+    <div className="w-full h-screen overflow-hidden relative" style={{ overflowX: 'hidden' }}>
+      {/* Background animé - Only on landing page */}
+      {!showNextPage && (
+        <div className="fixed inset-0 z-0">
+          <div 
+            className="absolute inset-0"
+            style={{
+              background: '#ffffff',
+              backgroundImage:
+                'linear-gradient(216deg,rgba(255, 255, 255, 1) 16%, rgba(207, 246, 255, 1) 82%, rgba(143, 244, 255, 1) 100%)',
+            }}
+          />
+          <AnimatedBackground />
+        </div>
+      )}
+      
+      {/* Simple background for question pages */}
+      {showNextPage && (
+        <div className="fixed inset-0 z-0">
+          <div 
+            className="absolute inset-0"
+            style={{
+              background: '#ffffff',
+              backgroundImage:
+                'linear-gradient(216deg,rgba(255, 255, 255, 1) 16%, rgba(207, 246, 255, 1) 82%, rgba(143, 244, 255, 1) 100%)',
+            }}
+          />
+        </div>
+      )}
+      
       {/* Loader */}
       {showLoader && (
         <div
           ref={loaderRef}
           className="absolute inset-0 z-50 flex items-center justify-center"
-          style={{
-            background: '#ffffff',
-            backgroundImage:
-              'linear-gradient(216deg,rgba(255, 255, 255, 1) 16%, rgba(207, 246, 255, 1) 82%, rgba(143, 244, 255, 1) 100%)',
-          }}
         >
           <div className="text-center">
             <div className="mb-4">
@@ -336,13 +383,11 @@ export default function SurveyLanding() {
       {/* Current Page */}
       <div
         ref={currentPageRef}
-        className="absolute inset-0 w-full h-full flex"
+        className="absolute inset-0 w-full h-full flex overflow-hidden"
         style={{
-          background: '#ffffff',
-          backgroundImage:
-            'linear-gradient(216deg,rgba(255, 255, 255, 1) 16%, rgba(207, 246, 255, 1) 82%, rgba(143, 244, 255, 1) 100%)',
           zIndex: 2,
           willChange: 'transform',
+          overflowX: 'hidden',
         }}
       >
       {/* Logo - Top Left */}
@@ -365,8 +410,7 @@ export default function SurveyLanding() {
           className="w-full h-full max-w-none"
           autoRotate={false}
           modelPath="/animation/691dbc778e7eb12743aabf09.glb"
-          onPushComplete={handlePushComplete}
-          enablePush={true}
+          enablePush={false}
           cameraPosition={[-1.1, 1, 2.3]}
           modelPosition={[0, -2, 0]}
           modelScale={1.9}
@@ -434,7 +478,7 @@ export default function SurveyLanding() {
                   className="flex items-center gap-2 px-4 py-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-sm font-inter"
                 >
                   <svg
-                    className="w-5 h-5 flex-shrink-0"
+                    className="w-5 h-5 shrink-0"
                     fill="none"
                     viewBox="0 0 24 24"
                     stroke="currentColor"
@@ -465,70 +509,55 @@ export default function SurveyLanding() {
       </div>
       </div>
 
-      {/* Next Page */}
-      {showNextPage && (
-        <div
+      {/* Questions Pages */}
+      {showNextPage && currentQuestion && (
+        <QuestionPage
+          key={`question-${currentQuestionIndex}`}
           ref={nextPageRef}
-          className="absolute inset-0 w-full h-full flex"
-          style={{
-            background: '#ffffff',
-            backgroundImage:
-              'linear-gradient(216deg,rgba(255, 255, 255, 1) 16%, rgba(207, 246, 255, 1) 82%, rgba(143, 244, 255, 1) 100%)',
-            zIndex: 1,
-            willChange: 'transform',
-          }}
+          questionNumber={currentQuestion.id}
+          questionText={currentQuestion.question}
+          currentQuestionIndex={currentQuestionIndex}
+          avatar={
+            <div
+              ref={nextPageAvatarRef}
+              className="opacity-0"
+              style={{ minHeight: '100%' }}
+            >
+              {/* @ts-ignore */}
+              <Avatar3D
+                className="w-full h-full max-w-none"
+                autoRotate={false}
+                modelPath="/animation/691dbc778e7eb12743aabf09.glb"
+                enableWaving={true}
+                cameraPosition={[0, 0.5, 4.5]}
+                cameraLookAt={[0, 0.3, 0]}
+                cameraFOV={30.5}
+                modelPosition={[0.1, -1.5, 1.2]}
+                modelScale={1.2}
+              />
+            </div>
+          }
         >
-          {/* Logo - Top Left */}
-          <div className="absolute top-6 left-6 z-10">
-            <img
-              src="/societe-des-boissons-du-maroc--600-removebg-preview.png"
-              alt="SBM Logo"
-              className="h-16 w-auto object-contain"
+          <div 
+            ref={questionContentRef}
+            className="opacity-0 w-full"
+          >
+            <QuestionRenderer
+              question={currentQuestion}
+              onAnswer={goToNextQuestion}
             />
           </div>
+        </QuestionPage>
+      )}
 
-          {/* Next Page Content */}
-          <div className="w-full h-full flex flex-col items-center justify-center px-6 py-8">
-            {/* Question Number - Top, will fade out */}
-            <div 
-              ref={questionNumberRef}
-              className="text-center mb-6"
-            >
-              <span className="text-6xl sm:text-7xl lg:text-8xl font-bold text-gray-300">
-                1
-              </span>
-            </div>
-
-            {/* Question Text - Below number */}
-            <div 
-              ref={questionTextRef}
-              className="text-center mb-8 sm:mb-14 opacity-0"
-            >
-              <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-gray-900 font-inter">
-                A quelle direction êtes-vous rattaché(e) ?
-              </h2>
-            </div>
-
-            {/* 3D Character - Middle of page, properly centered */}
-            <div className="w-full flex-1 flex items-center justify-center">
-              <div ref={nextPageAvatarRef} className="w-auto h-auto max-w-xs">
-                {/* @ts-ignore */}
-                <Avatar3D
-                  className="w-full h-full max-w-none"
-                  autoRotate={false}
-                  modelPath="/animation/691dbc778e7eb12743aabf09.glb"
-                  enableWaving={true}
-                  cameraPosition={[0, 0.5, 4.5]}
-                  cameraLookAt={[0, 0.3, 0]}
-                  cameraFOV={47.5}
-                  modelPosition={[0, -1.5, 0]}
-                  modelScale={1.5}
-                />
-              </div>
-            </div>
-          </div>
-        </div>
+      {/* Developer Navigation - Only show when questions are visible */}
+      {showNextPage && (
+        <QuestionNavigator
+          currentQuestionIndex={currentQuestionIndex}
+          onNavigate={goToQuestion}
+        />
       )}
     </div>
   )
 }
+ 

@@ -27,6 +27,7 @@ const Avatar3D = forwardRef(({
   modelScale = 1.9,
   enableWaving = false,
   enablePush = false,
+  enableHoverAnimation = false,
 }, ref) => {
   const mountRef = useRef(null)
   const controlsRef = useRef(null)
@@ -42,6 +43,10 @@ const Avatar3D = forwardRef(({
   const idleActionRef = useRef(null)
   const isWavingRef = useRef(false)
   const waveTimeoutRef = useRef(null)
+  const waveStartTimeoutRef = useRef(null)
+  const hoverTimeoutRef = useRef(null)
+  const isHoveringRef = useRef(false)
+  const hoverAnimationRef = useRef(null)
 
   useImperativeHandle(ref, () => ({
     playPushAnimation() {
@@ -251,6 +256,19 @@ const Avatar3D = forwardRef(({
         clearTimeout(waveTimeoutRef.current)
         waveTimeoutRef.current = null
       }
+      if (waveStartTimeoutRef.current) {
+        clearTimeout(waveStartTimeoutRef.current)
+        waveStartTimeoutRef.current = null
+      }
+      if (hoverTimeoutRef.current) {
+        clearTimeout(hoverTimeoutRef.current)
+        hoverTimeoutRef.current = null
+      }
+      // Kill any ongoing hover animation
+      if (hoverAnimationRef.current) {
+        hoverAnimationRef.current.kill()
+        hoverAnimationRef.current = null
+      }
       // controls.dispose() // Removed as controls are removed
       container.removeChild(renderer.domElement)
       renderer.dispose()
@@ -272,50 +290,126 @@ const Avatar3D = forwardRef(({
   
   const handleMouseEnter = () => {
     if (enableWaving && wavingAnimationRef.current && mixerRef.current && wavingActionRef.current && !isWavingRef.current) {
-      // Clear any pending timeout
-      if (waveTimeoutRef.current) {
-        clearTimeout(waveTimeoutRef.current)
-        waveTimeoutRef.current = null
+      // Clear any pending start timeout
+      if (waveStartTimeoutRef.current) {
+        clearTimeout(waveStartTimeoutRef.current)
+        waveStartTimeoutRef.current = null
       }
       
-      // Mark as waving
-      isWavingRef.current = true
-      
-      // Stop any current animation
-      if (idleActionRef.current) {
-        idleActionRef.current.fadeOut(0.2)
-      }
-      
-      // Play waving animation
-      wavingActionRef.current.reset().fadeIn(0.2).play()
-      wavingActionRef.current.setLoop(THREE.LoopOnce)
-      wavingActionRef.current.clampWhenFinished = true
-      
-      // Fade back to idle when waving finishes
-      const duration = wavingAnimationRef.current.duration * 1000
-      waveTimeoutRef.current = setTimeout(() => {
-        if (idleActionRef.current && wavingActionRef.current) {
-          wavingActionRef.current.fadeOut(0.3)
+      // Add delay before starting animation to prevent bugs on fast mouse movements
+      waveStartTimeoutRef.current = setTimeout(() => {
+        // Check again if still valid (user might have moved mouse away)
+        if (enableWaving && wavingAnimationRef.current && mixerRef.current && wavingActionRef.current && !isWavingRef.current) {
+          // Mark as waving
+          isWavingRef.current = true
+          
+          // Stop any current animation
           if (idleActionRef.current) {
-            idleActionRef.current.reset().fadeIn(0.3).play()
+            idleActionRef.current.fadeOut(0.2)
           }
+          
+          // Play waving animation
+          wavingActionRef.current.reset().fadeIn(0.2).play()
+          wavingActionRef.current.setLoop(THREE.LoopOnce)
+          wavingActionRef.current.clampWhenFinished = true
+          
+          // Fade back to idle when waving finishes
+          const duration = wavingAnimationRef.current.duration * 1000
+          waveTimeoutRef.current = setTimeout(() => {
+            if (idleActionRef.current && wavingActionRef.current) {
+              wavingActionRef.current.fadeOut(0.3)
+              if (idleActionRef.current) {
+                idleActionRef.current.reset().fadeIn(0.3).play()
+              }
+            }
+            isWavingRef.current = false
+            waveTimeoutRef.current = null
+          }, duration)
         }
-        isWavingRef.current = false
-        waveTimeoutRef.current = null
-      }, duration)
+        waveStartTimeoutRef.current = null
+      }, 300) // 300ms delay before starting animation
     }
   }
 
   const handleMouseLeave = () => {
+    // Clear pending start timeout if user leaves before delay completes
+    if (waveStartTimeoutRef.current) {
+      clearTimeout(waveStartTimeoutRef.current)
+      waveStartTimeoutRef.current = null
+    }
     // Don't interrupt if already waving, let it complete naturally
-    // Just clear any pending timeouts if user leaves before animation completes
+  }
+
+  // Hover animation with delay to prevent bugs on fast mouse movements
+  const handleHoverEnter = () => {
+    // Clear any pending hover timeout
+    if (hoverTimeoutRef.current) {
+      clearTimeout(hoverTimeoutRef.current)
+    }
+
+    // Set a delay before starting the animation (300ms)
+    hoverTimeoutRef.current = setTimeout(() => {
+      if (modelRef.current && !isHoveringRef.current) {
+        isHoveringRef.current = true
+        
+        // Animate the model with GSAP - scale up slightly and add a bounce
+        hoverAnimationRef.current = gsap.to(modelRef.current.scale, {
+          x: modelScale * 1.1,
+          y: modelScale * 1.1,
+          z: modelScale * 1.1,
+          duration: 0.4,
+          ease: 'back.out(1.7)',
+        })
+
+        // Also animate position slightly up
+        gsap.to(modelRef.current.position, {
+          y: modelPosition[1] + 0.2,
+          duration: 0.4,
+          ease: 'power2.out',
+        })
+      }
+    }, 300) // 300ms delay
+  }
+
+  const handleHoverLeave = () => {
+    // Clear the pending hover timeout if user leaves before delay
+    if (hoverTimeoutRef.current) {
+      clearTimeout(hoverTimeoutRef.current)
+      hoverTimeoutRef.current = null
+    }
+
+    // If already hovering, animate back
+    if (isHoveringRef.current && modelRef.current) {
+      isHoveringRef.current = false
+
+      // Kill any ongoing hover animation
+      if (hoverAnimationRef.current) {
+        hoverAnimationRef.current.kill()
+      }
+
+      // Animate back to original scale
+      gsap.to(modelRef.current.scale, {
+        x: modelScale,
+        y: modelScale,
+        z: modelScale,
+        duration: 0.3,
+        ease: 'power2.out',
+      })
+
+      // Animate back to original position
+      gsap.to(modelRef.current.position, {
+        y: modelPosition[1],
+        duration: 0.3,
+        ease: 'power2.out',
+      })
+    }
   }
 
   return (
     <div 
       className={`relative w-full h-full ${className}`}
-      onMouseEnter={enableWaving ? handleMouseEnter : undefined}
-      onMouseLeave={enableWaving ? handleMouseLeave : undefined}
+      onMouseEnter={enableWaving ? handleMouseEnter : enableHoverAnimation ? handleHoverEnter : undefined}
+      onMouseLeave={enableWaving ? handleMouseLeave : enableHoverAnimation ? handleHoverLeave : undefined}
     >
       <div ref={mountRef} className="w-full h-full" style={{opacity: 'inherit', background: 'none', borderRadius: 0, overflow: 'visible'}} />
 
@@ -356,5 +450,6 @@ Avatar3D.propTypes = {
   modelScale: PropTypes.number,
   enableWaving: PropTypes.bool,
   enablePush: PropTypes.bool,
+  enableHoverAnimation: PropTypes.bool,
 }
 
