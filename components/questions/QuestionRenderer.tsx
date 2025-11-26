@@ -7,6 +7,7 @@ import TextQuestion from "./TextQuestion";
 import RatingQuestion from "./RatingQuestion";
 import ModernChoiceList from "./ModernChoiceList";
 import SatisfactionRating from "./SatisfactionRating";
+import ContinueButton from "./ContinueButton";
 import { getSectionForQuestion } from "@/lib/questionSections";
 
 interface QuestionRendererProps {
@@ -21,6 +22,8 @@ export default function QuestionRenderer({
   const [selectedChoice, setSelectedChoice] = useState<string | null>(null);
   const section = getSectionForQuestion(question.id);
   const accentColor = section.accent;
+  const isFirstQuestion = question.id === 1;
+  const isLastQuestion = question.id === 23; // Total questions = 23
 
   const handleContinue = () => {
     if (question.type === 'choice' && selectedChoice) {
@@ -36,32 +39,24 @@ export default function QuestionRenderer({
       if (useModernDesign) {
         return (
           <>
-            <div className="w-full mb-8">
+            <div className="w-full mb-10">
               <ModernChoiceList
                 choices={question.choices || []}
                 onSelect={setSelectedChoice}
                 selectedId={selectedChoice}
                 accentColor={accentColor}
+                isFirstQuestion={isFirstQuestion}
               />
             </div>
-            <div className="w-full max-w-2xl mx-auto">
-              <button
+            <div className="w-full max-w-2xl mx-auto mt-8">
+              <ContinueButton
                 onClick={handleContinue}
                 disabled={!selectedChoice}
-                className="w-full px-8 py-4 rounded-2xl text-white font-bold text-base sm:text-lg shadow-lg transition-all duration-300 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 font-inter"
-                style={{
-                  background: `linear-gradient(to right, ${accentColor}, ${section.color})`,
-                  boxShadow: `0 10px 40px ${accentColor}40`,
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.boxShadow = `0 15px 50px ${accentColor}60`;
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.boxShadow = `0 10px 40px ${accentColor}40`;
-                }}
+                accentColor={accentColor}
+                sectionColor={section.color}
               >
                 Continuer
-              </button>
+              </ContinueButton>
             </div>
           </>
         );
@@ -72,6 +67,8 @@ export default function QuestionRenderer({
           onSelect={setSelectedChoice}
           selectedId={selectedChoice}
           onContinue={handleContinue}
+          accentColor={accentColor}
+          sectionColor={section.color}
         />
       );
 
@@ -81,6 +78,10 @@ export default function QuestionRenderer({
           placeholder={question.placeholder}
           onContinue={onAnswer}
           required={question.required}
+          accentColor={accentColor}
+          maxLength={question.maxLength}
+          isLastQuestion={isLastQuestion}
+          autoFocus={true}
         />
       );
 
@@ -89,6 +90,7 @@ export default function QuestionRenderer({
         <RatingQuestion
           onContinue={onAnswer}
           required={question.required}
+          accentColor={accentColor}
         />
       );
 
@@ -102,6 +104,8 @@ export default function QuestionRenderer({
             onAnswer(value);
           }}
           selectedId={selectedChoice}
+          accentColor={accentColor}
+          sectionColor={section.color}
         />
       );
 

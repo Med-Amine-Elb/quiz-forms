@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useState, useEffect, useRef } from "react";
 import { cn } from "@/lib/utils";
 import { Slider } from "@/components/ui/slider";
+import ContinueButton from "./ContinueButton";
 
 interface SatisfactionLevel {
   value: number;
@@ -61,17 +62,23 @@ interface SatisfactionRatingProps {
   onSelect: (value: string) => void;
   onSubmit?: (value: string) => void;
   selectedId?: string | null;
+  accentColor?: string;
+  sectionColor?: string;
 }
 
 export default function SatisfactionRating({
   onSelect,
   selectedId,
   onSubmit,
+  accentColor = "#06b6d4",
+  sectionColor,
 }: SatisfactionRatingProps) {
   const [value, setValue] = useState<number[]>([50]);
   const [isDragging, setIsDragging] = useState(false);
   const [showFeedback, setShowFeedback] = useState(false);
+  const [showCelebration, setShowCelebration] = useState(false);
   const sliderRef = useRef<HTMLDivElement>(null);
+  const prevValueRef = useRef<number>(50);
 
   // Get current satisfaction level based on value
   const getCurrentLevel = (val: number): SatisfactionLevel => {
@@ -109,11 +116,19 @@ export default function SatisfactionRating({
   }, [selectedId]);
 
   const handleValueChange = (newValue: number[]) => {
+    const newVal = newValue[0];
     setValue(newValue);
     setIsDragging(true);
-    const satisfactionId = getSatisfactionId(newValue[0]);
+    const satisfactionId = getSatisfactionId(newVal);
     onSelect(satisfactionId);
     setShowFeedback(true);
+
+    // Celebration at max satisfaction (100)
+    if (newVal === 100 && prevValueRef.current !== 100) {
+      setShowCelebration(true);
+      setTimeout(() => setShowCelebration(false), 2000);
+    }
+    prevValueRef.current = newVal;
   };
 
   const handleValueCommit = () => {
@@ -145,13 +160,59 @@ export default function SatisfactionRating({
   };
 
   return (
-    <div className="w-full max-w-5xl mx-auto space-y-10 py-8">
+    <div className="w-full max-w-5xl mx-auto space-y-6 py-6">
+      {/* Celebration Effect */}
+      <AnimatePresence>
+        {showCelebration && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0 }}
+            className="fixed inset-0 flex items-center justify-center z-[100] pointer-events-none"
+          >
+            <motion.div
+              initial={{ scale: 0, rotate: -180 }}
+              animate={{ scale: [1, 1.2, 1], rotate: 0 }}
+              transition={{ type: "spring", stiffness: 200, damping: 10 }}
+              className="text-8xl"
+            >
+              🎉
+            </motion.div>
+            {[...Array(20)].map((_, i) => (
+              <motion.div
+                key={i}
+                className="absolute text-4xl"
+                initial={{
+                  x: 0,
+                  y: 0,
+                  opacity: 1,
+                  scale: 1,
+                }}
+                animate={{
+                  x: (Math.random() - 0.5) * 800,
+                  y: (Math.random() - 0.5) * 800,
+                  opacity: 0,
+                  scale: 0,
+                }}
+                transition={{
+                  duration: 1.5,
+                  delay: i * 0.05,
+                  ease: "easeOut",
+                }}
+              >
+                {['🎉', '✨', '🌟', '💫'][Math.floor(Math.random() * 4)]}
+              </motion.div>
+            ))}
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Main Slider Container */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
-        className="relative bg-white/60 backdrop-blur-md rounded-3xl p-8 sm:p-12 shadow-xl border border-gray-100"
+        className="relative bg-white/60 backdrop-blur-md rounded-2xl p-6 sm:p-8 shadow-xl border border-gray-100"
       >
         {/* Current Level Display */}
         <AnimatePresence mode="wait">
@@ -161,7 +222,7 @@ export default function SatisfactionRating({
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.9, y: 10 }}
             transition={{ duration: 0.3 }}
-            className="mb-10 text-center"
+            className="mb-4 text-center"
           >
             <motion.div
               animate={{
@@ -171,7 +232,7 @@ export default function SatisfactionRating({
               className="inline-block"
             >
               <div className={cn(
-                "text-8xl sm:text-9xl mb-4 transition-all duration-300",
+                "text-6xl sm:text-7xl mb-3 transition-all duration-300",
                 isDragging && "drop-shadow-2xl"
               )}>
                 {currentLevel.emoji}
@@ -201,9 +262,9 @@ export default function SatisfactionRating({
         </AnimatePresence>
 
         {/* Interactive Slider */}
-        <div className="relative px-2 sm:px-4">
+        <div className="relative px-4 sm:px-6">
           {/* Slider Track with Gradient */}
-          <div className="relative mb-6" ref={sliderRef}>
+          <div className="relative mb-4" ref={sliderRef}>
             <div className="relative w-full">
               <Slider
                 value={value}
@@ -219,47 +280,53 @@ export default function SatisfactionRating({
           </div>
 
           {/* Level Markers */}
-          <div className="flex justify-between mt-6 px-2">
-            {satisfactionLevels.map((level, index) => (
-              <motion.button
-                key={level.value}
-                onClick={() => {
-                  setValue([level.value]);
-                  const satisfactionId = getSatisfactionId(level.value);
-                  onSelect(satisfactionId);
-                  setShowFeedback(true);
-                }}
-                whileHover={{ scale: 1.1, y: -4 }}
-                whileTap={{ scale: 0.95 }}
-                className={cn(
-                  "flex flex-col items-center gap-2 transition-all duration-300",
-                  "focus:outline-none focus:ring-2 focus:ring-offset-2 rounded-lg p-2",
-                  Math.abs(value[0] - level.value) <= 12.5
-                    ? "opacity-100 scale-100"
-                    : "opacity-40 hover:opacity-70"
-                )}
-                style={{
-                  focusRingColor: level.color,
-                }}
-              >
-                <motion.div
-                  animate={{
-                    scale: Math.abs(value[0] - level.value) <= 12.5 ? 1.2 : 1,
+          <div className="flex justify-between mt-4 px-2">
+            {satisfactionLevels.map((level, index) => {
+              const isSelected = Math.abs(value[0] - level.value) <= 12.5;
+              return (
+                <motion.button
+                  key={level.value}
+                  onClick={() => {
+                    setValue([level.value]);
+                    const satisfactionId = getSatisfactionId(level.value);
+                    onSelect(satisfactionId);
+                    setShowFeedback(true);
                   }}
-                  className="text-2xl sm:text-3xl"
+                  whileHover={{ scale: 1.05, y: -2 }}
+                  whileTap={{ scale: 0.95 }}
+                  className={cn(
+                    "flex flex-col items-center gap-2 transition-all duration-300",
+                    "focus:outline-none rounded-lg p-3",
+                    isSelected
+                      ? "opacity-100"
+                      : "opacity-40 hover:opacity-70"
+                  )}
                 >
-                  {level.emoji}
-                </motion.div>
-                <span className={cn(
-                  "text-xs sm:text-sm font-medium font-inter whitespace-nowrap",
-                  Math.abs(value[0] - level.value) <= 12.5
-                    ? "font-bold"
-                    : "font-normal"
-                )}>
-                  {level.label.split(' ')[0]}
-                </span>
-              </motion.button>
-            ))}
+                  <motion.div
+                    animate={{
+                      scale: isSelected ? 1.2 : 1,
+                    }}
+                    className={cn(
+                      "text-2xl sm:text-3xl w-12 h-12 flex items-center justify-center rounded-lg transition-all duration-300",
+                      isSelected && "border-2"
+                    )}
+                    style={{
+                      borderColor: isSelected ? level.color : 'transparent',
+                    }}
+                  >
+                    {level.emoji}
+                  </motion.div>
+                  <span className={cn(
+                    "text-sm font-medium font-inter whitespace-nowrap",
+                    isSelected
+                      ? "font-bold"
+                      : "font-normal"
+                  )}>
+                    {level.label.split(' ')[0]}
+                  </span>
+                </motion.button>
+              );
+            })}
           </div>
         </div>
 
@@ -268,20 +335,20 @@ export default function SatisfactionRating({
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: showFeedback ? 1 : 0, scale: showFeedback ? 1 : 0.9 }}
           transition={{ duration: 0.3 }}
-          className="mt-8 text-center"
+          className="mt-4 text-center"
         >
           <div 
-            className="inline-flex items-center gap-3 px-6 py-3 rounded-full backdrop-blur-sm border-2 shadow-lg transition-all duration-300"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-full backdrop-blur-sm border-2 shadow-lg transition-all duration-300"
             style={{
               backgroundColor: `${currentLevel.color}15`,
               borderColor: currentLevel.color,
             }}
           >
-            <span className="text-sm font-semibold text-gray-700 font-inter">
-              Niveau de satisfaction:
+            <span className="text-xs font-semibold text-gray-700 font-inter">
+              Satisfaction:
             </span>
             <span
-              className="text-xl font-bold font-inter"
+              className="text-base font-bold font-inter"
               style={{ color: currentLevel.color }}
             >
               {value[0]}%
@@ -297,20 +364,13 @@ export default function SatisfactionRating({
         transition={{ duration: 0.4, delay: 0.2 }}
         className="flex justify-center pt-4"
       >
-        <motion.button
+        <ContinueButton
           onClick={handleContinue}
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-          className={cn(
-            "px-10 py-4 rounded-2xl font-bold text-lg shadow-lg",
-            "transition-all duration-300 font-inter",
-            "bg-gradient-to-r from-cyan-400 to-cyan-500",
-            "text-gray-900 hover:shadow-cyan-500/50",
-            "focus:outline-none focus:ring-4 focus:ring-cyan-400/50"
-          )}
+          accentColor={accentColor}
+          sectionColor={sectionColor}
         >
           Continuer
-        </motion.button>
+        </ContinueButton>
       </motion.div>
     </div>
   );

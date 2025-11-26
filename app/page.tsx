@@ -6,6 +6,7 @@ import Avatar3D from '@/src/components/Avatar3D'
 import AnimatedBackground from '@/components/ui/AnimatedBackground'
 import QuestionPage from '@/components/questions/QuestionPage'
 import QuestionRenderer from '@/components/questions/QuestionRenderer'
+import ProgressBar from '@/components/questions/ProgressBar'
 import { useQuestionNavigation } from '@/hooks/useQuestionNavigation'
 import QuestionNavigator from '@/components/dev/QuestionNavigator'
 
@@ -36,6 +37,7 @@ export default function SurveyLanding() {
     goToNextQuestion,
     goToQuestion,
     isLastQuestion,
+    totalQuestions,
   } = useQuestionNavigation()
   
   const questionContentRef = useRef<HTMLDivElement>(null)
@@ -68,48 +70,61 @@ export default function SurveyLanding() {
     return () => clearTimeout(timer)
   }, [])
 
-  // Smooth transition between questions
+  // Smooth transition between questions - optimized to prevent freezing
   useEffect(() => {
     if (showNextPage && currentQuestion && nextPageRef.current && currentQuestionIndex > 0) {
-      // Reset states for smooth transition
-      if (questionContentRef.current) {
-        gsap.set(questionContentRef.current, { opacity: 0, y: 30 })
-      }
-      if (nextPageAvatarRef.current) {
-        gsap.set(nextPageAvatarRef.current, { opacity: 0 })
-      }
-
-      // Create smooth slide transition
-      const transitionTimeline = gsap.timeline()
+      // Kill ALL existing animations to prevent conflicts
+      gsap.killTweensOf(nextPageRef.current)
+      gsap.killTweensOf(questionContentRef.current)
+      gsap.killTweensOf(nextPageAvatarRef.current)
       
-      // Slide out previous question to left
-      transitionTimeline.to(nextPageRef.current, {
-        x: '-100%',
-        opacity: 0,
-        duration: 0.4,
-        ease: 'power2.in',
+      // Use requestAnimationFrame to ensure DOM is ready
+      requestAnimationFrame(() => {
+        // Reset states immediately with proper z-index
+        gsap.set(nextPageRef.current, { 
+          x: '100%', 
+          opacity: 0,
+          zIndex: 2,
+          clearProps: 'all'
+        })
+        
+        if (questionContentRef.current) {
+          gsap.set(questionContentRef.current, { opacity: 0, y: 20 })
+        }
+        if (nextPageAvatarRef.current) {
+          gsap.set(nextPageAvatarRef.current, { opacity: 0 })
+        }
+
+        // Simple, fast slide-in transition
+        gsap.to(nextPageRef.current, {
+          x: '0%',
+          opacity: 1,
+          duration: 0.4,
+          ease: 'power2.out',
+          onComplete: () => {
+            // After page slides in, fade in content
+            if (questionContentRef.current) {
+              gsap.to(questionContentRef.current, {
+                opacity: 1,
+                y: 0,
+                duration: 0.5,
+                ease: 'power2.out',
+                delay: 0.4, // Wait for header animation
+              })
+            }
+            
+            // Fade in avatar
+            if (nextPageAvatarRef.current) {
+              gsap.to(nextPageAvatarRef.current, {
+                opacity: 1,
+                duration: 0.5,
+                ease: 'power2.out',
+                delay: 0.3,
+              })
+            }
+          }
+        })
       })
-      // Slide in new question from right
-      .set(nextPageRef.current, { x: '100%', opacity: 0 })
-      .to(nextPageRef.current, {
-        x: '0%',
-        opacity: 1,
-        duration: 0.6,
-        ease: 'power3.out',
-      })
-      // Wait for AnimatedQuestionHeader to complete, then fade in content
-      .to(questionContentRef.current, {
-        opacity: 1,
-        y: 0,
-        duration: 0.8,
-        ease: 'power2.out',
-      }, '+=1.2')
-      // Fade in character 3D
-      .to(nextPageAvatarRef.current, {
-        opacity: 1,
-        duration: 1,
-        ease: 'power2.out',
-      }, '-=0.3')
     }
   }, [currentQuestionIndex, showNextPage, currentQuestion])
 
@@ -248,29 +263,15 @@ export default function SurveyLanding() {
         }
       })
       
-      // Fade out current page (faster)
-      masterTimeline.to(currentPageRef.current, {
-        opacity: 0,
-        duration: 0.4,
-        ease: 'power2.out',
-      })
-      
-      // Show loader quickly
-      masterTimeline.call(() => {
-        if (loaderRef.current) {
-          gsap.set(loaderRef.current, { opacity: 1 })
-        }
-      })
-      
-      // Show next page and prepare it
+      // Enhanced fade + slide combination
+      // Prepare next page first
       masterTimeline.call(() => {
         setShowNextPage(true)
-      }, [], '+=0.2') // Small delay to ensure DOM is ready
+      })
       
-      // Slide in next page (faster and smoother)
       masterTimeline.call(() => {
         if (nextPageRef.current) {
-          // Set initial states
+          // Set initial states for next page
           gsap.set(nextPageRef.current, { 
             x: '100%', 
             opacity: 0, 
@@ -285,35 +286,56 @@ export default function SurveyLanding() {
           if (nextPageAvatarRef.current) {
             gsap.set(nextPageAvatarRef.current, { opacity: 0 })
           }
-          
-          // Fade out loader
-          if (loaderRef.current) {
-            gsap.to(loaderRef.current, {
-              opacity: 0,
-              duration: 0.3,
-              ease: 'power2.in',
-            })
-          }
-          
-          // Slide in next page with fade (faster)
+        }
+      })
+      
+      // Show loader
+      masterTimeline.call(() => {
+        if (loaderRef.current) {
+          gsap.set(loaderRef.current, { opacity: 1 })
+        }
+      })
+      
+      // Fade out current page (with slight slide)
+      masterTimeline.to(currentPageRef.current, {
+        x: '-20%',
+        opacity: 0,
+        duration: 0.5,
+        ease: 'power3.inOut',
+      })
+      
+      // Fade out loader and slide in next page simultaneously
+      masterTimeline.call(() => {
+        if (loaderRef.current) {
+          gsap.to(loaderRef.current, {
+            opacity: 0,
+            duration: 0.3,
+            ease: 'power2.in',
+          })
+        }
+      }, [], '-=0.2')
+      
+      // Slide in next page with fade (enhanced fade + slide combination)
+      masterTimeline.call(() => {
+        if (nextPageRef.current) {
           gsap.to(nextPageRef.current, {
             x: '0%',
             opacity: 1,
-            duration: 0.5,
-            ease: 'power2.out',
+            duration: 0.6,
+            ease: 'power3.out',
             onComplete: () => {
-              // Fade in content after page is visible (faster)
+              // Fade in content after page is visible
               if (questionContentRef.current) {
                 gsap.to(questionContentRef.current, {
                   opacity: 1,
                   y: 0,
                   duration: 0.5,
                   ease: 'power2.out',
-                  delay: 0.3, // Wait for header animation
+                  delay: 0.3,
                 })
               }
               
-              // Fade in avatar (faster)
+              // Fade in avatar
               if (nextPageAvatarRef.current) {
                 gsap.to(nextPageAvatarRef.current, {
                   opacity: 1,
@@ -325,7 +347,7 @@ export default function SurveyLanding() {
             }
           })
         }
-      }, [], '+=0.3') // Minimal delay
+      }, [], '-=0.2')
     }
   }
 
@@ -508,6 +530,17 @@ export default function SurveyLanding() {
         </div>
       </div>
       </div>
+
+      {/* Progress Bar - Fixed at top, persists across questions */}
+      {showNextPage && currentQuestion && (
+        <div className="fixed top-0 left-0 right-0 z-50">
+          <ProgressBar
+            currentQuestionId={currentQuestion.id}
+            currentQuestionIndex={currentQuestionIndex}
+            totalQuestions={totalQuestions}
+          />
+        </div>
+      )}
 
       {/* Questions Pages */}
       {showNextPage && currentQuestion && (

@@ -7,6 +7,8 @@ export interface QuestionSection {
   color: string;
   gradient: string;
   accent: string;
+  description?: string;
+  icon?: string;
 }
 
 export const questionSections: QuestionSection[] = [
@@ -18,6 +20,8 @@ export const questionSections: QuestionSection[] = [
     color: '#0EA5E9', // Sky Blue
     gradient: 'linear-gradient(216deg, rgba(224, 242, 254, 1) 16%, rgba(186, 230, 253, 1) 82%, rgba(125, 211, 252, 1) 100%)',
     accent: '#0EA5E9',
+    description: 'Commençons par quelques informations de base',
+    icon: '📋',
   },
   {
     id: 'support',
@@ -27,6 +31,8 @@ export const questionSections: QuestionSection[] = [
     color: '#10B981', // Emerald
     gradient: 'linear-gradient(216deg, rgba(209, 250, 229, 1) 16%, rgba(167, 243, 208, 1) 82%, rgba(110, 231, 183, 1) 100%)',
     accent: '#10B981',
+    description: 'Partagez votre expérience avec notre équipe support IT',
+    icon: '🟢',
   },
   {
     id: 'innovation',
@@ -36,6 +42,8 @@ export const questionSections: QuestionSection[] = [
     color: '#8B5CF6', // Violet
     gradient: 'linear-gradient(216deg, rgba(243, 232, 255, 1) 16%, rgba(233, 213, 255, 1) 82%, rgba(221, 214, 254, 1) 100%)',
     accent: '#8B5CF6',
+    description: 'Explorons les outils et solutions digitales',
+    icon: '💡',
   },
   {
     id: 'securite',
@@ -45,6 +53,8 @@ export const questionSections: QuestionSection[] = [
     color: '#F59E0B', // Amber
     gradient: 'linear-gradient(216deg, rgba(254, 243, 199, 1) 16%, rgba(253, 230, 138, 1) 82%, rgba(252, 211, 77, 1) 100%)',
     accent: '#F59E0B',
+    description: 'Votre avis sur nos pratiques de sécurité',
+    icon: '🔒',
   },
   {
     id: 'communication',
@@ -54,6 +64,8 @@ export const questionSections: QuestionSection[] = [
     color: '#EF4444', // Red
     gradient: 'linear-gradient(216deg, rgba(254, 226, 226, 1) 16%, rgba(254, 202, 202, 1) 82%, rgba(252, 165, 165, 1) 100%)',
     accent: '#EF4444',
+    description: 'Comment améliorer notre communication',
+    icon: '💬',
   },
 ];
 

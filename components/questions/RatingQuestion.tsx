@@ -2,12 +2,14 @@
 
 import { useState } from "react";
 import { Star } from "lucide-react";
+import ContinueButton from "./ContinueButton";
 
 interface RatingQuestionProps {
   maxRating?: number;
   onContinue: (rating: number) => void;
   continueButtonText?: string;
   required?: boolean;
+  accentColor?: string;
 }
 
 export default function RatingQuestion({
@@ -15,6 +17,7 @@ export default function RatingQuestion({
   onContinue,
   continueButtonText = "Continuer",
   required = false,
+  accentColor = "#06b6d4",
 }: RatingQuestionProps) {
   const [rating, setRating] = useState<number | null>(null);
   const [hoveredRating, setHoveredRating] = useState<number | null>(null);
@@ -63,13 +66,13 @@ export default function RatingQuestion({
 
       {/* Continue Button */}
       <div className="w-full max-w-4xl mx-auto">
-        <button
+        <ContinueButton
           onClick={handleContinue}
           disabled={required && rating === null}
-          className="px-8 py-4 rounded-2xl bg-gradient-to-r from-cyan-400 to-cyan-500 text-gray-900 font-bold text-base sm:text-lg shadow-lg shadow-cyan-500/30 hover:shadow-cyan-400/50 transition-all duration-300 transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 font-inter"
+          accentColor={accentColor}
         >
           {continueButtonText}
-        </button>
+        </ContinueButton>
       </div>
     </>
   );

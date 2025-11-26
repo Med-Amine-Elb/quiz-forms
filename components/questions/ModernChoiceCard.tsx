@@ -11,6 +11,8 @@ interface ModernChoiceCardProps {
   onClick: () => void;
   index: number;
   accentColor?: string;
+  icon?: any;
+  isFirstQuestion?: boolean;
 }
 
 export default function ModernChoiceCard({
@@ -20,6 +22,8 @@ export default function ModernChoiceCard({
   onClick,
   index,
   accentColor = '#0EA5E9',
+  icon: Icon,
+  isFirstQuestion = false,
 }: ModernChoiceCardProps) {
   return (
     <motion.button
@@ -38,15 +42,20 @@ export default function ModernChoiceCard({
       }}
       whileTap={{ scale: 0.97 }}
       className={cn(
-        "relative w-full px-6 py-5 rounded-2xl text-left transition-all duration-300",
-        "border-2 font-inter text-base sm:text-lg font-medium",
+        "relative w-full rounded-2xl text-left transition-all duration-300",
+        "border-2 font-inter font-medium",
         "focus:outline-none focus:ring-2 focus:ring-offset-2",
         "group overflow-hidden",
         // Glassmorphism effect
         "backdrop-blur-md",
+        // Larger for first question
+        isFirstQuestion 
+          ? "px-8 py-6 text-lg sm:text-xl"
+          : "px-6 py-5 text-base sm:text-lg",
+        // Consistent sizing and contrast
         isSelected
-          ? "bg-white/90 border-current shadow-xl"
-          : "bg-white/40 border-white/30 hover:bg-white/60 hover:border-white/50"
+          ? "bg-white/90 border-current shadow-xl text-gray-900"
+          : "bg-white/40 border-white/30 hover:bg-white/60 hover:border-white/50 text-gray-800"
       )}
       style={{
         borderColor: isSelected ? accentColor : undefined,
@@ -102,14 +111,31 @@ export default function ModernChoiceCard({
         />
       )}
 
-      {/* Content */}
+      {/* Content - Consistent Typography */}
       <div className="relative flex items-center justify-between gap-4 z-10">
-        <span className={cn(
-          "flex-1",
-          isSelected ? "text-gray-900 font-semibold" : "text-gray-700"
-        )}>
-          {label}
-        </span>
+        <div className="flex items-center gap-3 flex-1">
+          {/* Icon - Larger and animated for first question */}
+          {Icon && (
+            <motion.div
+              animate={isSelected ? { scale: [1, 1.2, 1], rotate: [0, 10, -10, 0] } : {}}
+              transition={{ duration: 0.5 }}
+              className={cn(
+                "flex-shrink-0",
+                isFirstQuestion ? "w-8 h-8" : "w-6 h-6"
+              )}
+              style={{ color: isSelected ? accentColor : '#6B7280' }}
+            >
+              <Icon className="w-full h-full" />
+            </motion.div>
+          )}
+          <span className={cn(
+            "flex-1",
+            isFirstQuestion ? "text-lg sm:text-xl" : "text-base sm:text-lg",
+            isSelected ? "text-gray-900 font-bold" : "text-gray-800 font-medium"
+          )}>
+            {label}
+          </span>
+        </div>
         
         {/* Check icon with section color */}
         {isSelected && (
