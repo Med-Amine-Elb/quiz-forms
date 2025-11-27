@@ -1,7 +1,6 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { useState } from "react";
 import { 
   Check, 
   Building2, 
@@ -58,10 +57,10 @@ export default function InteractiveChoiceList({
               className={cn(
                 "relative px-6 py-4 rounded-2xl text-left transition-all duration-300",
                 "border-2 font-inter text-base sm:text-lg font-medium",
-                "focus:outline-none focus:ring-2 focus:ring-offset-2",
+                "focus:outline-none focus:ring-4 focus:ring-offset-2 focus:ring-cyan-500/50",
                 isSelected
-                  ? "text-gray-900 border-[#53FF45] shadow-lg focus:ring-[#53FF45]"
-                  : "bg-white/80 backdrop-blur-sm text-gray-700 border-gray-200 hover:border-[#53FF45]/50 hover:bg-[#53FF45]/10 focus:ring-[#53FF45]/50"
+                  ? "text-gray-900 border-[#53FF45] shadow-lg"
+                  : "bg-white/80 backdrop-blur-sm text-gray-700 border-gray-200 hover:border-[#53FF45]/50 hover:bg-[#53FF45]/10"
               )}
               style={
                 isSelected

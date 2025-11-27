@@ -161,11 +161,14 @@ export default function TextQuestion({
                 <textarea
                   ref={textareaRef}
                   placeholder={placeholder}
+                  aria-label={placeholder}
+                  aria-required={required}
+                  aria-describedby={maxLength ? "char-count" : undefined}
                   className={cn(
                     "w-full rounded-2xl pr-10 pt-4 pb-4 px-5",
                     "placeholder:text-sm border-none focus:ring-0",
                     "text-gray-900 resize-none text-wrap bg-transparent",
-                    "focus-visible:ring-0 focus-visible:ring-offset-0",
+                    "focus-visible:ring-4 focus-visible:ring-offset-2 focus-visible:ring-cyan-500/50",
                     "leading-relaxed text-base font-inter",
                     "focus:outline-none"
                   )}

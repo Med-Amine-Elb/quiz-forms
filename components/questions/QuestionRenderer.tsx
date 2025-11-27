@@ -1,14 +1,34 @@
 "use client";
 
-import { useState } from "react";
-import { Question } from "@/data/questions";
-import ChoiceQuestion from "./ChoiceQuestion";
-import TextQuestion from "./TextQuestion";
-import RatingQuestion from "./RatingQuestion";
-import ModernChoiceList from "./ModernChoiceList";
-import SatisfactionRating from "./SatisfactionRating";
+import { useState, useEffect } from "react";
+import dynamic from "next/dynamic";
+import { Question, questions } from "@/data/questions";
 import ContinueButton from "./ContinueButton";
 import { getSectionForQuestion } from "@/lib/questionSections";
+
+const QuestionSkeleton = () => (
+  <div className="w-full max-w-3xl mx-auto rounded-3xl bg-white/30 border border-white/40 min-h-[240px] animate-pulse" />
+);
+
+const ChoiceQuestion = dynamic(() => import("./ChoiceQuestion"), {
+  loading: () => <QuestionSkeleton />,
+});
+
+const TextQuestion = dynamic(() => import("./TextQuestion"), {
+  loading: () => <QuestionSkeleton />,
+});
+
+const RatingQuestion = dynamic(() => import("./RatingQuestion"), {
+  loading: () => <QuestionSkeleton />,
+});
+
+const SatisfactionRating = dynamic(() => import("./SatisfactionRating"), {
+  loading: () => <QuestionSkeleton />,
+});
+
+const ModernChoiceList = dynamic(() => import("./ModernChoiceList"), {
+  loading: () => <QuestionSkeleton />,
+});
 
 interface QuestionRendererProps {
   question: Question;
@@ -23,7 +43,12 @@ export default function QuestionRenderer({
   const section = getSectionForQuestion(question.id);
   const accentColor = section.accent;
   const isFirstQuestion = question.id === 1;
-  const isLastQuestion = question.id === 23; // Total questions = 23
+  const isLastQuestion = question.id === questions.length;
+
+  // Reset selected choice when question changes
+  useEffect(() => {
+    setSelectedChoice(null);
+  }, [question.id]);
 
   const handleContinue = () => {
     if (question.type === 'choice' && selectedChoice) {

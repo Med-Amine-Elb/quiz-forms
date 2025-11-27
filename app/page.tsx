@@ -1,6 +1,8 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import dynamic from 'next/dynamic'
+import { motion } from 'framer-motion'
 import gsap from 'gsap'
 import Avatar3D from '@/src/components/Avatar3D'
 import AnimatedBackground from '@/components/ui/AnimatedBackground'
@@ -8,7 +10,29 @@ import QuestionPage from '@/components/questions/QuestionPage'
 import QuestionRenderer from '@/components/questions/QuestionRenderer'
 import ProgressBar from '@/components/questions/ProgressBar'
 import { useQuestionNavigation } from '@/hooks/useQuestionNavigation'
-import QuestionNavigator from '@/components/dev/QuestionNavigator'
+import AccessibilityMenu from '@/components/accessibility/AccessibilityMenu'
+import SkipToContent from '@/components/accessibility/SkipToContent'
+import { questions } from '@/data/questions'
+import { preloadQuestionType } from '@/lib/preloadQuestionComponents'
+import { getSectionForQuestion } from '@/lib/questionSections'
+
+const CompletionScreen = dynamic(
+  () => import('@/components/questions/CompletionScreen'),
+  { loading: () => null }
+)
+
+const QuestionNavigator = dynamic(
+  () => import('@/components/dev/QuestionNavigator'),
+  { ssr: false, loading: () => null }
+)
+
+const runOnIdle = (callback: () => void) => {
+  if (typeof window !== 'undefined' && 'requestIdleCallback' in window) {
+    ;(window as any).requestIdleCallback(callback)
+    return
+  }
+  setTimeout(callback, 0)
+}
 
 export default function SurveyLanding() {
   const containerRef = useRef(null)
@@ -29,18 +53,62 @@ export default function SurveyLanding() {
   const [showError, setShowError] = useState(false)
   const [showNextPage, setShowNextPage] = useState(false)
   const [showLoader, setShowLoader] = useState(false)
+  const [prefersReducedMotion, setPrefersReducedMotion] = useState(false)
   
   // Question navigation hook
   const {
     currentQuestion,
     currentQuestionIndex,
     goToNextQuestion,
+    goToPreviousQuestion,
     goToQuestion,
     isLastQuestion,
+    isCompleted,
+    resetSurvey,
     totalQuestions,
   } = useQuestionNavigation()
   
+  const currentSection = useMemo(
+    () => (currentQuestion ? getSectionForQuestion(currentQuestion.id) : null),
+    [currentQuestion]
+  )
+  
   const questionContentRef = useRef<HTMLDivElement>(null)
+  const lastSectionRef = useRef<string | null>(null)
+  const memoizedQuestionAvatar = useMemo(
+    () => (
+      <Avatar3D
+        className="w-full h-full max-w-none"
+        autoRotate={false}
+        modelPath="/animation/691dbc778e7eb12743aabf09.glb"
+        enableWaving={true}
+        cameraPosition={[0, 0.5, 4.5]}
+        cameraLookAt={[0, 0.3, 0]}
+        cameraFOV={30.5}
+        modelPosition={[0.1, -1.5, 1.2]}
+        modelScale={1.2}
+      />
+    ),
+    []
+  )
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const media = window.matchMedia('(prefers-reduced-motion: reduce)')
+    const updatePreference = () => setPrefersReducedMotion(media.matches)
+    updatePreference()
+    media.addEventListener('change', updatePreference)
+    return () => media.removeEventListener('change', updatePreference)
+  }, [])
+
+  useEffect(() => {
+    if (!currentQuestion) return
+    preloadQuestionType(currentQuestion.type)
+    const upcoming = questions[currentQuestionIndex + 1]
+    if (upcoming) {
+      runOnIdle(() => preloadQuestionType(upcoming.type))
+    }
+  }, [currentQuestion, currentQuestionIndex])
 
   useEffect(() => {
     // Small delay to ensure refs are ready
@@ -72,22 +140,29 @@ export default function SurveyLanding() {
 
   // Smooth transition between questions - optimized to prevent freezing
   useEffect(() => {
-    if (showNextPage && currentQuestion && nextPageRef.current && currentQuestionIndex > 0) {
-      // Kill ALL existing animations to prevent conflicts
-      gsap.killTweensOf(nextPageRef.current)
-      gsap.killTweensOf(questionContentRef.current)
-      gsap.killTweensOf(nextPageAvatarRef.current)
-      
-      // Use requestAnimationFrame to ensure DOM is ready
-      requestAnimationFrame(() => {
-        // Reset states immediately with proper z-index
-        gsap.set(nextPageRef.current, { 
-          x: '100%', 
+    if (!(showNextPage && currentQuestion && nextPageRef.current && currentSection)) {
+      return
+    }
+
+    const currentSectionId = currentSection.id
+    const isSectionChange = lastSectionRef.current !== currentSectionId
+    const slideDuration = prefersReducedMotion ? 0.25 : 0.4
+    const fadeDuration = prefersReducedMotion ? 0.3 : 0.5
+    const contentDelay = prefersReducedMotion ? 0.1 : 0.25
+    const avatarDelay = prefersReducedMotion ? 0.1 : 0.25
+
+    gsap.killTweensOf(nextPageRef.current)
+    gsap.killTweensOf(questionContentRef.current)
+    gsap.killTweensOf(nextPageAvatarRef.current)
+
+    requestAnimationFrame(() => {
+      if (isSectionChange) {
+        gsap.set(nextPageRef.current, {
+          x: '100%',
           opacity: 0,
           zIndex: 2,
-          clearProps: 'all'
+          clearProps: 'all',
         })
-        
         if (questionContentRef.current) {
           gsap.set(questionContentRef.current, { opacity: 0, y: 20 })
         }
@@ -95,38 +170,64 @@ export default function SurveyLanding() {
           gsap.set(nextPageAvatarRef.current, { opacity: 0 })
         }
 
-        // Simple, fast slide-in transition
         gsap.to(nextPageRef.current, {
           x: '0%',
           opacity: 1,
-          duration: 0.4,
+          duration: slideDuration,
           ease: 'power2.out',
           onComplete: () => {
-            // After page slides in, fade in content
             if (questionContentRef.current) {
               gsap.to(questionContentRef.current, {
                 opacity: 1,
                 y: 0,
-                duration: 0.5,
+                duration: fadeDuration,
                 ease: 'power2.out',
-                delay: 0.4, // Wait for header animation
+                delay: contentDelay,
               })
             }
-            
-            // Fade in avatar
             if (nextPageAvatarRef.current) {
               gsap.to(nextPageAvatarRef.current, {
                 opacity: 1,
-                duration: 0.5,
+                duration: fadeDuration,
                 ease: 'power2.out',
-                delay: 0.3,
+                delay: avatarDelay,
               })
             }
-          }
+          },
         })
-      })
-    }
-  }, [currentQuestionIndex, showNextPage, currentQuestion])
+      } else {
+        // Keep page in place, only animate question content
+        gsap.set(nextPageRef.current, {
+          x: '0%',
+          opacity: 1,
+          clearProps: 'transform',
+        })
+        if (nextPageAvatarRef.current) {
+          gsap.set(nextPageAvatarRef.current, { opacity: 1 })
+        }
+        if (questionContentRef.current) {
+          gsap.fromTo(
+            questionContentRef.current,
+            { opacity: 0, y: 12 },
+            {
+              opacity: 1,
+              y: 0,
+              duration: fadeDuration,
+              ease: 'power2.out',
+            }
+          )
+        }
+      }
+    })
+
+    lastSectionRef.current = currentSectionId
+  }, [
+    currentQuestion,
+    currentSection,
+    currentQuestionIndex,
+    prefersReducedMotion,
+    showNextPage,
+  ])
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -532,20 +633,22 @@ export default function SurveyLanding() {
       </div>
 
       {/* Progress Bar - Fixed at top, persists across questions */}
-      {showNextPage && currentQuestion && (
+      {showNextPage && currentQuestion && !isCompleted && (
         <div className="fixed top-0 left-0 right-0 z-50">
           <ProgressBar
             currentQuestionId={currentQuestion.id}
             currentQuestionIndex={currentQuestionIndex}
             totalQuestions={totalQuestions}
+            onBack={goToPreviousQuestion}
+            showBackButton={true}
           />
         </div>
       )}
 
       {/* Questions Pages */}
-      {showNextPage && currentQuestion && (
+      {showNextPage && currentQuestion && !isCompleted && currentSection && (
         <QuestionPage
-          key={`question-${currentQuestionIndex}`}
+          key={`section-${currentSection.id}`}
           ref={nextPageRef}
           questionNumber={currentQuestion.id}
           questionText={currentQuestion.question}
@@ -556,24 +659,16 @@ export default function SurveyLanding() {
               className="opacity-0"
               style={{ minHeight: '100%' }}
             >
-              {/* @ts-ignore */}
-              <Avatar3D
-                className="w-full h-full max-w-none"
-                autoRotate={false}
-                modelPath="/animation/691dbc778e7eb12743aabf09.glb"
-                enableWaving={true}
-                cameraPosition={[0, 0.5, 4.5]}
-                cameraLookAt={[0, 0.3, 0]}
-                cameraFOV={30.5}
-                modelPosition={[0.1, -1.5, 1.2]}
-                modelScale={1.2}
-              />
+              {memoizedQuestionAvatar}
             </div>
           }
         >
           <div 
             ref={questionContentRef}
             className="opacity-0 w-full"
+            data-main-content
+            tabIndex={-1}
+            aria-label="Contenu principal de la question"
           >
             <QuestionRenderer
               question={currentQuestion}
@@ -583,13 +678,38 @@ export default function SurveyLanding() {
         </QuestionPage>
       )}
 
+      {/* Completion Screen with smooth transition */}
+      {isCompleted && (
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.8, ease: 'easeOut' }}
+          className="absolute inset-0 z-50"
+        >
+          <CompletionScreen
+            onReturnToStart={() => {
+              resetSurvey();
+              setShowNextPage(false);
+              setSubmitted(false);
+              // Reset form if needed
+              if (nomRef.current) nomRef.current.value = '';
+              if (prenomRef.current) prenomRef.current.value = '';
+            }}
+          />
+        </motion.div>
+      )}
+
       {/* Developer Navigation - Only show when questions are visible */}
-      {showNextPage && (
+      {showNextPage && !isCompleted && (
         <QuestionNavigator
           currentQuestionIndex={currentQuestionIndex}
           onNavigate={goToQuestion}
         />
       )}
+
+      {/* Accessibility Features */}
+      <AccessibilityMenu />
+      <SkipToContent />
     </div>
   )
 }

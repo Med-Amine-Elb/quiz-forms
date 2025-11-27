@@ -32,7 +32,9 @@ export default function RatingQuestion({
     <>
       {/* Rating Stars */}
       <div className="w-full max-w-4xl mx-auto mb-8">
-        <div className="flex justify-center items-center gap-2">
+        <div 
+          className="flex justify-center items-center gap-2"
+        >
           {Array.from({ length: maxRating }, (_, i) => {
             const starValue = i + 1;
             const isFilled = starValue <= (hoveredRating || rating || 0);
@@ -44,7 +46,7 @@ export default function RatingQuestion({
                 onClick={() => setRating(starValue)}
                 onMouseEnter={() => setHoveredRating(starValue)}
                 onMouseLeave={() => setHoveredRating(null)}
-                className="transition-transform hover:scale-110 active:scale-95"
+                className="transition-transform hover:scale-110 active:scale-95 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-cyan-500/50 rounded-lg"
               >
                 <Star
                   className={`w-12 h-12 ${

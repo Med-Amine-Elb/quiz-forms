@@ -29,6 +29,7 @@ export interface Question {
   choices?: QuestionChoice[];
   placeholder?: string;
   required?: boolean;
+  maxLength?: number;
 }
 
 export const questions: Question[] = [

@@ -143,3 +143,88 @@
 .font-inter {
   font-family: 'Inter', sans-serif;
 }
+
+/* Accessibility Styles */
+
+/* High Contrast Mode */
+.high-contrast {
+  --background: #000000;
+  --foreground: #FFFFFF;
+  --border: #FFFFFF;
+}
+
+.high-contrast * {
+  border-color: #FFFFFF !important;
+}
+
+.high-contrast button,
+.high-contrast input,
+.high-contrast textarea,
+.high-contrast select {
+  border: 2px solid #FFFFFF !important;
+  background: #000000 !important;
+  color: #FFFFFF !important;
+}
+
+.high-contrast button:focus,
+.high-contrast input:focus,
+.high-contrast textarea:focus {
+  outline: 3px solid #FFFF00 !important;
+  outline-offset: 2px !important;
+}
+
+/* Font Size Adjustments */
+.font-normal {
+  font-size: 1rem;
+}
+
+.font-large {
+  font-size: 1.125rem;
+}
+
+.font-large h1,
+.font-large h2,
+.font-large h3 {
+  font-size: 1.5em;
+}
+
+.font-xlarge {
+  font-size: 1.25rem;
+}
+
+.font-xlarge h1,
+.font-xlarge h2,
+.font-xlarge h3 {
+  font-size: 1.75em;
+}
+
+/* Reduced Motion */
+.reduced-motion *,
+.reduced-motion *::before,
+.reduced-motion *::after {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
+  scroll-behavior: auto !important;
+}
+
+/* Enhanced Focus Indicators */
+*:focus-visible {
+  outline: 3px solid #06b6d4 !important;
+  outline-offset: 2px !important;
+  border-radius: 4px;
+}
+
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible {
+  outline: 3px solid #06b6d4 !important;
+  outline-offset: 2px !important;
+}
+
+/* Skip to content link */
+[data-main-content] {
+  scroll-margin-top: 80px;
+}

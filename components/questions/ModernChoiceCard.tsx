@@ -3,6 +3,7 @@
 import { motion } from "framer-motion";
 import { Check } from "lucide-react";
 import { cn } from "@/lib/utils";
+import type { LucideIcon } from "lucide-react";
 
 interface ModernChoiceCardProps {
   id: string;
@@ -11,7 +12,7 @@ interface ModernChoiceCardProps {
   onClick: () => void;
   index: number;
   accentColor?: string;
-  icon?: any;
+  icon?: LucideIcon;
   isFirstQuestion?: boolean;
 }
 
@@ -44,7 +45,7 @@ export default function ModernChoiceCard({
       className={cn(
         "relative w-full rounded-2xl text-left transition-all duration-300",
         "border-2 font-inter font-medium",
-        "focus:outline-none focus:ring-2 focus:ring-offset-2",
+        "focus:outline-none focus:ring-4 focus:ring-offset-2 focus:ring-cyan-500/50",
         "group overflow-hidden",
         // Glassmorphism effect
         "backdrop-blur-md",

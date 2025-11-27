@@ -32,17 +32,17 @@ export default function ModernChoiceList({
         className="grid grid-cols-1 sm:grid-cols-2 gap-5"
       >
         {choices.map((choice, index) => (
-                  <ModernChoiceCard
-                    key={choice.id}
-                    id={choice.id}
-                    label={choice.label}
-                    isSelected={selectedId === choice.id}
-                    onClick={() => onSelect(choice.id)}
-                    index={index}
-                    accentColor={accentColor}
-                    icon={(choice as any).icon}
-                    isFirstQuestion={isFirstQuestion}
-                  />
+          <ModernChoiceCard
+            key={choice.id}
+            id={choice.id}
+            label={choice.label}
+            isSelected={selectedId === choice.id}
+            onClick={() => onSelect(choice.id)}
+            index={index}
+            accentColor={accentColor}
+            icon={(choice as any).icon}
+            isFirstQuestion={isFirstQuestion}
+          />
         ))}
       </motion.div>
     </div>
