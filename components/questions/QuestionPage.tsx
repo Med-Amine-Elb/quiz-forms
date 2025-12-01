@@ -31,7 +31,6 @@ const QuestionPage = forwardRef<HTMLDivElement, QuestionPageProps>(({
 }, ref) => {
   const section = getSectionForQuestion(questionNumber);
   const totalQuestions = questions.length;
-  const backgroundRef = useRef<HTMLDivElement>(null);
   const previousSectionRef = useRef<string | null>(null);
   const [showSectionIntro, setShowSectionIntro] = useState(false);
   const [showWelcome, setShowWelcome] = useState(false);
@@ -44,7 +43,7 @@ const QuestionPage = forwardRef<HTMLDivElement, QuestionPageProps>(({
     }
   }, [isFirstQuestion]);
 
-  // Smooth gradient transition when section changes using crossfade
+  // Show section intro on first question of new section
   useEffect(() => {
     const isFirstQuestionOfSection = questionNumber === section.startQuestion;
     const isNewSection = previousSectionRef.current !== section.id;
@@ -52,32 +51,6 @@ const QuestionPage = forwardRef<HTMLDivElement, QuestionPageProps>(({
     // Only show section intro on the FIRST question of a NEW section
     if (isNewSection && isFirstQuestionOfSection) {
       setShowSectionIntro(true);
-      
-      // Crossfade effect - fade out old, fade in new
-      if (backgroundRef.current && previousSectionRef.current !== null) {
-        gsap.to(backgroundRef.current, {
-          opacity: 0,
-          duration: 0.6,
-          ease: 'power2.inOut',
-          onComplete: () => {
-            // Update gradient
-            if (backgroundRef.current) {
-              backgroundRef.current.style.backgroundImage = section.gradient;
-              gsap.to(backgroundRef.current, {
-                opacity: 1,
-                duration: 0.8,
-                ease: 'power2.inOut',
-              });
-            }
-          },
-        });
-      } else {
-        // Set initial gradient for first load
-        if (backgroundRef.current) {
-          backgroundRef.current.style.backgroundImage = section.gradient;
-          gsap.set(backgroundRef.current, { opacity: 1 });
-        }
-      }
       previousSectionRef.current = section.id;
     } else {
       // Hide section intro if not on first question of section
@@ -85,18 +58,12 @@ const QuestionPage = forwardRef<HTMLDivElement, QuestionPageProps>(({
         setShowSectionIntro(false);
       }
       
-      // Set gradient for same section
-      if (backgroundRef.current) {
-        backgroundRef.current.style.backgroundImage = section.gradient;
-        gsap.set(backgroundRef.current, { opacity: 1 });
-      }
-      
       // Update previous section ref even if not showing intro
       if (isNewSection) {
         previousSectionRef.current = section.id;
       }
     }
-  }, [section.id, section.gradient, questionNumber, section.startQuestion]);
+  }, [section.id, questionNumber, section.startQuestion]);
 
   return (
       <div
@@ -110,18 +77,6 @@ const QuestionPage = forwardRef<HTMLDivElement, QuestionPageProps>(({
           WebkitBackfaceVisibility: 'hidden',
         }}
       >
-      {/* Animated Background Layer - no transition to prevent freezing */}
-      <div
-        ref={backgroundRef}
-        className="absolute inset-0"
-        style={{
-          background: '#ffffff',
-          backgroundImage: section.gradient,
-          opacity: 1,
-          zIndex: 0,
-          pointerEvents: 'none',
-        }}
-      />
       {/* Welcome Message for First Question */}
       {showWelcome && isFirstQuestion && (
         <WelcomeMessage onComplete={() => setShowWelcome(false)} />

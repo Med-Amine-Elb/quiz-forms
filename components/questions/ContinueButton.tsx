@@ -72,13 +72,13 @@ export default function ContinueButton({
       )}
       style={{
         background: sectionColor
-          ? `linear-gradient(to right, ${accentColor}, ${sectionColor})`
-          : `linear-gradient(to right, ${accentColor}, ${accentColor}dd)`,
+          ? `linear-gradient(135deg, ${accentColor}, ${sectionColor})`
+          : `linear-gradient(135deg, ${accentColor}, ${accentColor}dd)`,
         boxShadow: disabled
           ? `0 10px 40px ${accentColor}20`
-          : `0 10px 40px ${accentColor}40`,
+          : `0 15px 50px ${accentColor}40, inset 0 1px 0 rgba(255,255,255,0.3)`,
       }}
-      whileHover={!disabled ? { scale: 1.02 } : {}}
+      whileHover={!disabled ? { scale: 1.03, y: -2 } : {}}
       whileTap={!disabled ? { scale: 0.98 } : {}}
       animate={
         !disabled && !isLoading && !showSuccess
@@ -100,12 +100,12 @@ export default function ContinueButton({
       }}
       onMouseEnter={(e) => {
         if (!disabled) {
-          e.currentTarget.style.boxShadow = `0 15px 50px ${accentColor}60`;
+          e.currentTarget.style.boxShadow = `0 25px 70px ${accentColor}60, inset 0 1px 0 rgba(255,255,255,0.4)`;
         }
       }}
       onMouseLeave={(e) => {
         if (!disabled) {
-          e.currentTarget.style.boxShadow = `0 10px 40px ${accentColor}40`;
+          e.currentTarget.style.boxShadow = `0 15px 50px ${accentColor}40, inset 0 1px 0 rgba(255,255,255,0.3)`;
         }
       }}
     >

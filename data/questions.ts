@@ -20,6 +20,9 @@ export interface QuestionChoice {
   id: string;
   label: string;
   icon?: typeof Building2;
+  emoji?: string;
+  title?: string;
+  description?: string;
 }
 
 export interface Question {
@@ -65,10 +68,34 @@ export const questions: Question[] = [
     type: 'choice',
     question: 'Depuis combien de temps avez-vous intégré GBM ?',
     choices: [
-      { id: 'time-1', label: 'Moins d\'un an' },
-      { id: 'time-2', label: 'Entre 1 an et 5 ans' },
-      { id: 'time-3', label: 'Entre 5 ans et 10 ans' },
-      { id: 'time-4', label: 'Plus de 10 ans' },
+      { 
+        id: 'time-1', 
+        label: 'Moins d\'un an',
+        emoji: '🌟',
+        title: 'Moins d\'un an',
+        description: 'Nouveau collaborateur'
+      },
+      { 
+        id: 'time-2', 
+        label: 'Entre 1 an et 5 ans',
+        emoji: '💼',
+        title: '1 à 5 ans',
+        description: 'Collaborateur confirmé'
+      },
+      { 
+        id: 'time-3', 
+        label: 'Entre 5 ans et 10 ans',
+        emoji: '🎯',
+        title: '5 à 10 ans',
+        description: 'Collaborateur expérimenté'
+      },
+      { 
+        id: 'time-4', 
+        label: 'Plus de 10 ans',
+        emoji: '👑',
+        title: 'Plus de 10 ans',
+        description: 'Collaborateur senior'
+      },
     ],
     required: true,
   },
@@ -83,10 +110,34 @@ export const questions: Question[] = [
     type: 'choice',
     question: 'Avez-vous apprécié la transition du support utilisateur vers Castel Connect ?',
     choices: [
-      { id: 'castel-1', label: 'J\'ai adoré, Castel Connect a grandement simplifié mon travail. Merci la team !' },
-      { id: 'castel-2', label: 'J\'ai apprécié le changement et reconnais que la digitalisation a amélioré les process' },
-      { id: 'castel-3', label: 'Je n\'ai pas trop apprécié, je trouve que Castel Connect a trop complexifié les choses' },
-      { id: 'castel-4', label: 'Je n\'ai pas du tout apprécié, je veux revenir à l\'ancienne méthode' },
+      { 
+        id: 'castel-1', 
+        label: 'J\'ai adoré, Castel Connect a grandement simplifié mon travail. Merci la team !',
+        emoji: '😍',
+        title: 'Très satisfait',
+        description: 'Castel Connect a grandement simplifié mon travail. Merci la team !'
+      },
+      { 
+        id: 'castel-2', 
+        label: 'J\'ai apprécié le changement et reconnais que la digitalisation a amélioré les process',
+        emoji: '👍',
+        title: 'Satisfait',
+        description: 'La digitalisation a amélioré les process'
+      },
+      { 
+        id: 'castel-3', 
+        label: 'Je n\'ai pas trop apprécié, je trouve que Castel Connect a trop complexifié les choses',
+        emoji: '😕',
+        title: 'Peu satisfait',
+        description: 'Castel Connect a trop complexifié les choses'
+      },
+      { 
+        id: 'castel-4', 
+        label: 'Je n\'ai pas du tout apprécié, je veux revenir à l\'ancienne méthode',
+        emoji: '👎',
+        title: 'Pas satisfait',
+        description: 'Je préfère revenir à l\'ancienne méthode'
+      },
     ],
     required: true,
   },
@@ -97,9 +148,27 @@ export const questions: Question[] = [
     type: 'choice',
     question: 'Globalement, comment décririez-vous au mieux votre ressenti suite à une demande de support IT ?',
     choices: [
-      { id: 'support-feel-1', label: 'Le besoin est toujours bien compris par la team support et la résolution répond tout à fait aux attentes' },
-      { id: 'support-feel-2', label: 'Le besoin est compris mais la résolution ne répond pas toujours aux attentes' },
-      { id: 'support-feel-3', label: 'L\'équipe support ne comprend pas toujours mon besoin' },
+      { 
+        id: 'support-feel-1', 
+        label: 'Le besoin est toujours bien compris par la team support et la résolution répond tout à fait aux attentes',
+        emoji: '⭐',
+        title: 'Excellent',
+        description: 'Besoin bien compris et résolution conforme aux attentes'
+      },
+      { 
+        id: 'support-feel-2', 
+        label: 'Le besoin est compris mais la résolution ne répond pas toujours aux attentes',
+        emoji: '👌',
+        title: 'Correct',
+        description: 'Besoin compris mais résolution perfectible'
+      },
+      { 
+        id: 'support-feel-3', 
+        label: 'L\'équipe support ne comprend pas toujours mon besoin',
+        emoji: '😔',
+        title: 'Insuffisant',
+        description: 'Mon besoin n\'est pas toujours bien compris'
+      },
     ],
     required: true,
   },
@@ -110,9 +179,27 @@ export const questions: Question[] = [
     type: 'choice',
     question: 'Comment jugez-vous le temps nécessaire que met la DSI pour résoudre un problème informatique ?',
     choices: [
-      { id: 'resolve-time-1', label: 'Super satisfaisant, bravo la team' },
-      { id: 'resolve-time-2', label: 'Assez satisfaisant, je dois relancer plusieurs fois' },
-      { id: 'resolve-time-3', label: 'Trop peu satisfaisant, le process doit être amélioré' },
+      { 
+        id: 'resolve-time-1', 
+        label: 'Super satisfaisant, bravo la team',
+        emoji: '⚡',
+        title: 'Rapide',
+        description: 'Super satisfaisant, bravo la team'
+      },
+      { 
+        id: 'resolve-time-2', 
+        label: 'Assez satisfaisant, je dois relancer plusieurs fois',
+        emoji: '⏱️',
+        title: 'Acceptable',
+        description: 'Je dois relancer plusieurs fois'
+      },
+      { 
+        id: 'resolve-time-3', 
+        label: 'Trop peu satisfaisant, le process doit être amélioré',
+        emoji: '⏳',
+        title: 'Trop lent',
+        description: 'Le process doit être amélioré'
+      },
     ],
     required: true,
   },
@@ -144,9 +231,27 @@ export const questions: Question[] = [
     type: 'choice',
     question: 'La digitalisation vous semble-t-elle être la priorité de votre DSI ?',
     choices: [
-      { id: 'digital-priority-1', label: 'Oui, je sens qu\'il y a une réelle volonté à digitaliser les process et les nouveautés s\'enchaînent à pleine vitesse' },
-      { id: 'digital-priority-2', label: 'J\'ai l\'impression qu\'il y a une volonté notable mais j\'encourage la DSI à faire davantage' },
-      { id: 'digital-priority-3', label: 'Non, j\'ai l\'impression que la DSI se concentre sur des sujets qui lui sont propres plutôt que sur la digitalisation des process' },
+      { 
+        id: 'digital-priority-1', 
+        label: 'Oui, je sens qu\'il y a une réelle volonté à digitaliser les process et les nouveautés s\'enchaînent à pleine vitesse',
+        emoji: '🚀',
+        title: 'Oui, absolument',
+        description: 'Volonté réelle de digitaliser et nouveautés en continu'
+      },
+      { 
+        id: 'digital-priority-2', 
+        label: 'J\'ai l\'impression qu\'il y a une volonté notable mais j\'encourage la DSI à faire davantage',
+        emoji: '💪',
+        title: 'Oui, mais peut mieux faire',
+        description: 'Volonté notable mais j\'encourage à faire davantage'
+      },
+      { 
+        id: 'digital-priority-3', 
+        label: 'Non, j\'ai l\'impression que la DSI se concentre sur des sujets qui lui sont propres plutôt que sur la digitalisation des process',
+        emoji: '🤔',
+        title: 'Non, pas vraiment',
+        description: 'La DSI se concentre sur d\'autres priorités'
+      },
     ],
     required: true,
   },
@@ -157,10 +262,34 @@ export const questions: Question[] = [
     type: 'choice',
     question: 'En terme d\'Innovation, si la DSI était une équipe de sport, à quel niveau la placeriez-vous ?',
     choices: [
-      { id: 'innovation-1', label: 'Championne du monde' },
-      { id: 'innovation-2', label: 'Ligue professionnelle' },
-      { id: 'innovation-3', label: 'Amateur en progrès' },
-      { id: 'innovation-4', label: 'Débutant en rodage' },
+      { 
+        id: 'innovation-1', 
+        label: 'Championne du monde',
+        emoji: '🏆',
+        title: 'Championne du monde',
+        description: 'Excellence et innovation constante'
+      },
+      { 
+        id: 'innovation-2', 
+        label: 'Ligue professionnelle',
+        emoji: '⚽',
+        title: 'Ligue professionnelle',
+        description: 'Bon niveau avec marges de progression'
+      },
+      { 
+        id: 'innovation-3', 
+        label: 'Amateur en progrès',
+        emoji: '🎯',
+        title: 'Amateur en progrès',
+        description: 'En développement, sur la bonne voie'
+      },
+      { 
+        id: 'innovation-4', 
+        label: 'Débutant en rodage',
+        emoji: '🌱',
+        title: 'Débutant en rodage',
+        description: 'Au début du parcours d\'innovation'
+      },
     ],
     required: true,
   },
@@ -189,9 +318,27 @@ export const questions: Question[] = [
     type: 'choice',
     question: 'Que pensez-vous de l\'ergonomie des outils et logiciels fournis par la DSI ?',
     choices: [
-      { id: 'ergo-1', label: 'Intuitifs' },
-      { id: 'ergo-2', label: 'Moyennement pratiques' },
-      { id: 'ergo-3', label: 'Complexes' },
+      { 
+        id: 'ergo-1', 
+        label: 'Intuitifs',
+        emoji: '✨',
+        title: 'Intuitifs',
+        description: 'Faciles à utiliser et bien pensés'
+      },
+      { 
+        id: 'ergo-2', 
+        label: 'Moyennement pratiques',
+        emoji: '🔧',
+        title: 'Moyennement pratiques',
+        description: 'Fonctionnels mais perfectibles'
+      },
+      { 
+        id: 'ergo-3', 
+        label: 'Complexes',
+        emoji: '🔀',
+        title: 'Complexes',
+        description: 'Difficiles à prendre en main'
+      },
     ],
     required: true,
   },
@@ -211,13 +358,13 @@ export const questions: Question[] = [
     type: 'choice',
     question: 'Quel outil trouvez-vous le plus frustrant à utiliser ?',
     choices: [
-      { id: 'frustrating-1', label: 'SAP' },
-      { id: 'frustrating-2', label: 'Assabil' },
-      { id: 'frustrating-3', label: 'AGIRH' },
-      { id: 'frustrating-4', label: 'Castel Connect' },
-      { id: 'frustrating-5', label: 'Suite Microsoft' },
-      { id: 'frustrating-6', label: 'Aucun' },
-      { id: 'frustrating-7', label: 'Autre' },
+      { id: 'frustrating-1', label: 'SAP', emoji: '💼' },
+      { id: 'frustrating-2', label: 'Assabil', emoji: '📊' },
+      { id: 'frustrating-3', label: 'AGIRH', emoji: '👤' },
+      { id: 'frustrating-4', label: 'Castel Connect', emoji: '🔗' },
+      { id: 'frustrating-5', label: 'Suite Microsoft', emoji: '🪟' },
+      { id: 'frustrating-6', label: 'Aucun', emoji: '😊' },
+      { id: 'frustrating-7', label: 'Autre', emoji: '🔧' },
     ],
     required: true,
   },
@@ -237,10 +384,34 @@ export const questions: Question[] = [
     type: 'choice',
     question: 'À quelle fréquence avez-vous recours à des solutions de contournement parce que les outils fournis ne répondent pas totalement à vos besoins ?',
     choices: [
-      { id: 'workaround-1', label: 'Jamais' },
-      { id: 'workaround-2', label: 'Rarement' },
-      { id: 'workaround-3', label: 'Souvent' },
-      { id: 'workaround-4', label: 'Tout le temps' },
+      { 
+        id: 'workaround-1', 
+        label: 'Jamais',
+        emoji: '✅',
+        title: 'Jamais',
+        description: 'Les outils répondent parfaitement aux besoins'
+      },
+      { 
+        id: 'workaround-2', 
+        label: 'Rarement',
+        emoji: '👍',
+        title: 'Rarement',
+        description: 'Quelques ajustements occasionnels'
+      },
+      { 
+        id: 'workaround-3', 
+        label: 'Souvent',
+        emoji: '🔄',
+        title: 'Souvent',
+        description: 'Contournements réguliers nécessaires'
+      },
+      { 
+        id: 'workaround-4', 
+        label: 'Tout le temps',
+        emoji: '⚠️',
+        title: 'Tout le temps',
+        description: 'Solutions alternatives constamment requises'
+      },
     ],
     required: true,
   },
@@ -264,9 +435,27 @@ export const questions: Question[] = [
     type: 'choice',
     question: 'Dans quelle mesure vous sentez-vous impliqué(e) dans la protection des données de l\'entreprise ?',
     choices: [
-      { id: 'data-protection-1', label: 'Beaucoup' },
-      { id: 'data-protection-2', label: 'Un peu' },
-      { id: 'data-protection-3', label: 'Pas du tout' },
+      { 
+        id: 'data-protection-1', 
+        label: 'Beaucoup',
+        emoji: '🛡️',
+        title: 'Très impliqué(e)',
+        description: 'Je suis vigilant(e) et responsable'
+      },
+      { 
+        id: 'data-protection-2', 
+        label: 'Un peu',
+        emoji: '🔐',
+        title: 'Modérément impliqué(e)',
+        description: 'J\'applique les règles de base'
+      },
+      { 
+        id: 'data-protection-3', 
+        label: 'Pas du tout',
+        emoji: '❓',
+        title: 'Peu impliqué(e)',
+        description: 'Je ne me sens pas concerné(e)'
+      },
     ],
     required: true,
   },
@@ -277,8 +466,20 @@ export const questions: Question[] = [
     type: 'choice',
     question: 'Avez-vous déjà rencontré une situation où vous avez hésité sur la démarche à suivre en matière de sécurité informatique ?',
     choices: [
-      { id: 'security-hesitation-1', label: 'Oui' },
-      { id: 'security-hesitation-2', label: 'Non' },
+      { 
+        id: 'security-hesitation-1', 
+        label: 'Oui',
+        emoji: '🤷',
+        title: 'Oui',
+        description: 'J\'ai déjà hésité sur la démarche'
+      },
+      { 
+        id: 'security-hesitation-2', 
+        label: 'Non',
+        emoji: '✔️',
+        title: 'Non',
+        description: 'Je sais toujours quoi faire'
+      },
     ],
     required: true,
   },
@@ -298,9 +499,27 @@ export const questions: Question[] = [
     type: 'choice',
     question: 'Comment jugeriez-vous de votre niveau à évaluer des risques de cybersécurité ?',
     choices: [
-      { id: 'cyber-level-1', label: 'Je suis très bien formé et devrais être le référent du Groupe à ce sujet' },
-      { id: 'cyber-level-2', label: 'J\'ai suivi toutes les formations de cybersécurité et pense être à jour' },
-      { id: 'cyber-level-3', label: 'Je tâtonne et pense qu\'on doit me former à ce sujet' },
+      { 
+        id: 'cyber-level-1', 
+        label: 'Je suis très bien formé et devrais être le référent du Groupe à ce sujet',
+        emoji: '🎓',
+        title: 'Expert',
+        description: 'Très bien formé, pourrait être référent du Groupe'
+      },
+      { 
+        id: 'cyber-level-2', 
+        label: 'J\'ai suivi toutes les formations de cybersécurité et pense être à jour',
+        emoji: '📚',
+        title: 'À jour',
+        description: 'Formations suivies, connaissances actualisées'
+      },
+      { 
+        id: 'cyber-level-3', 
+        label: 'Je tâtonne et pense qu\'on doit me former à ce sujet',
+        emoji: '🆘',
+        title: 'Besoin de formation',
+        description: 'Formation nécessaire pour progresser'
+      },
     ],
     required: true,
   },
@@ -315,10 +534,34 @@ export const questions: Question[] = [
     type: 'choice',
     question: 'Comment préférez-vous être informé(e) des nouveautés et des changements IT ?',
     choices: [
-      { id: 'communication-1', label: 'Email' },
-      { id: 'communication-2', label: 'Réunion' },
-      { id: 'communication-3', label: 'Vidéo explicative' },
-      { id: 'communication-4', label: 'Autre' },
+      { 
+        id: 'communication-1', 
+        label: 'Email',
+        emoji: '📧',
+        title: 'Email',
+        description: 'Communication écrite et traçable'
+      },
+      { 
+        id: 'communication-2', 
+        label: 'Réunion',
+        emoji: '👥',
+        title: 'Réunion',
+        description: 'Échange direct et interactif'
+      },
+      { 
+        id: 'communication-3', 
+        label: 'Vidéo explicative',
+        emoji: '🎬',
+        title: 'Vidéo explicative',
+        description: 'Contenu visuel et démonstratif'
+      },
+      { 
+        id: 'communication-4', 
+        label: 'Autre',
+        emoji: '💬',
+        title: 'Autre',
+        description: 'Une autre méthode de communication'
+      },
     ],
     required: true,
   },

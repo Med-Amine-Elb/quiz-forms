@@ -99,13 +99,18 @@ const Avatar3D = forwardRef(({
       width: container.clientWidth || 400,
       height: container.clientHeight || container.clientWidth || 400,
     }
+    
+    // Performance optimization: reduce pixel ratio on lower-end devices
+    const pixelRatio = Math.min(window.devicePixelRatio, 2)
 
     // Initialisation du renderer WebGL + antialias pour des contours lisses
     const renderer = new THREE.WebGLRenderer({
-      antialias: true,
+      antialias: pixelRatio <= 1.5, // Only enable antialiasing on lower DPI screens
       alpha: backgroundColor === 'transparent',
+      powerPreference: 'high-performance',
+      stencil: false,
     })
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.8))
+    renderer.setPixelRatio(pixelRatio)
     renderer.setSize(sizes.width, sizes.height)
     renderer.outputColorSpace = THREE.SRGBColorSpace
     container.appendChild(renderer.domElement)

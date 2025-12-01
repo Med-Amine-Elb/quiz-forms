@@ -56,12 +56,12 @@ export default function AnimatedQuestionCard({
               isFirstQuestion ? "p-8 sm:p-10" : "p-5 sm:p-6"
             )}
             style={{
-              background: `linear-gradient(135deg, rgba(255, 255, 255, 0.98), rgba(255, 255, 255, 0.95))`,
-              borderColor: `${color}25`,
-              boxShadow: `0 8px 32px ${color}10, 0 0 0 1px ${color}08, inset 0 1px 0 rgba(255, 255, 255, 0.8)`,
+              background: `linear-gradient(135deg, rgba(255, 255, 255, 1), rgba(255, 255, 255, 0.98))`,
+              borderColor: `${color}50`,
+              boxShadow: `0 16px 48px rgba(0, 0, 0, 0.15), 0 0 0 2px ${color}30, inset 0 1px 0 rgba(255, 255, 255, 1)`,
             }}
             whileHover={{
-              boxShadow: `0 12px 40px ${color}15, 0 0 0 1px ${color}15, inset 0 1px 0 rgba(255, 255, 255, 0.9)`,
+              boxShadow: `0 20px 60px ${color}40, 0 0 0 3px ${color}50, inset 0 1px 0 rgba(255, 255, 255, 1)`,
             }}
             transition={{ duration: 0.2 }}
           >

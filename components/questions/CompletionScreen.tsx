@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { CheckCircle2, Sparkles } from "lucide-react";
+import { useEffect, useRef } from "react";
+import { motion } from "framer-motion";
+import { CheckCircle2, Sparkles, TrendingUp, Award } from "lucide-react";
 import gsap from "gsap";
 
 interface CompletionScreenProps {
@@ -11,226 +11,272 @@ interface CompletionScreenProps {
 
 export default function CompletionScreen({ onReturnToStart }: CompletionScreenProps) {
   const containerRef = useRef<HTMLDivElement>(null);
-  const confettiRef = useRef<HTMLDivElement>(null);
-  const [showConfetti, setShowConfetti] = useState(true);
+  const checkmarkRef = useRef<HTMLDivElement>(null);
+  const card1Ref = useRef<HTMLDivElement>(null);
+  const card2Ref = useRef<HTMLDivElement>(null);
+  const card3Ref = useRef<HTMLDivElement>(null);
+  const titleRef = useRef<HTMLDivElement>(null);
+  const subtitleRef = useRef<HTMLDivElement>(null);
+  const buttonRef = useRef<HTMLButtonElement>(null);
+  const logoRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    // Create confetti animation
-    if (confettiRef.current && showConfetti) {
-      const colors = ['#10B981', '#06B6D4', '#8B5CF6', '#F59E0B', '#EF4444'];
-      const confettiCount = 50;
+    const tl = gsap.timeline({ defaults: { ease: "power3.out" } });
 
-      for (let i = 0; i < confettiCount; i++) {
-        const confetti = document.createElement('div');
-        confetti.style.position = 'fixed';
-        confetti.style.width = `${Math.random() * 12 + 6}px`;
-        confetti.style.height = `${Math.random() * 12 + 6}px`;
-        confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
-        confetti.style.left = `${Math.random() * 100}%`;
-        confetti.style.top = '-10px';
-        confetti.style.borderRadius = Math.random() > 0.5 ? '50%' : '0';
-        confetti.style.pointerEvents = 'none';
-        confetti.style.zIndex = '9999';
-        confetti.style.opacity = '0.9';
-        
-        document.body.appendChild(confetti);
-
-        const animation = confetti.animate(
-          [
-            {
-              transform: `translateY(0) rotate(0deg)`,
-              opacity: 1,
-            },
-            {
-              transform: `translateY(${window.innerHeight + 100}px) rotate(${Math.random() * 720}deg)`,
-              opacity: 0,
-            },
-          ],
-          {
-            duration: Math.random() * 2000 + 2000,
-            easing: 'cubic-bezier(0.5, 0, 0.5, 1)',
-            delay: Math.random() * 500,
-          }
-        );
-
-        animation.onfinish = () => confetti.remove();
-      }
-
-      // Stop confetti after 3 seconds
-      setTimeout(() => setShowConfetti(false), 3000);
+    // Animate logo first
+    if (logoRef.current) {
+      tl.fromTo(
+        logoRef.current,
+        { opacity: 0, y: -30 },
+        { opacity: 1, y: 0, duration: 0.8 },
+        0
+      );
     }
-  }, [showConfetti]);
+
+    // Checkmark animation - scale in with bounce
+    if (checkmarkRef.current) {
+      tl.fromTo(
+        checkmarkRef.current,
+        { scale: 0, rotation: -180 },
+        { 
+          scale: 1, 
+          rotation: 0, 
+          duration: 1, 
+          ease: "elastic.out(1, 0.5)" 
+        },
+        0.3
+      );
+    }
+
+    // Title cascade
+    if (titleRef.current) {
+      tl.fromTo(
+        titleRef.current,
+        { opacity: 0, y: 30 },
+        { opacity: 1, y: 0, duration: 0.8 },
+        0.6
+      );
+    }
+
+    if (subtitleRef.current) {
+      tl.fromTo(
+        subtitleRef.current,
+        { opacity: 0, y: 20 },
+        { opacity: 1, y: 0, duration: 0.8 },
+        0.8
+      );
+    }
+
+    // Cards animation - staggered
+    const cards = [card1Ref.current, card2Ref.current, card3Ref.current];
+    cards.forEach((card, index) => {
+      if (card) {
+        tl.fromTo(
+          card,
+          { opacity: 0, y: 50, scale: 0.9 },
+          { opacity: 1, y: 0, scale: 1, duration: 0.7 },
+          1 + index * 0.15
+        );
+      }
+    });
+
+    // Button animation
+    if (buttonRef.current) {
+      tl.fromTo(
+        buttonRef.current,
+        { opacity: 0, scale: 0.9 },
+        { opacity: 1, scale: 1, duration: 0.6 },
+        1.5
+      );
+    }
+
+    // Continuous floating animation for cards
+    cards.forEach((card, index) => {
+      if (card) {
+        gsap.to(card, {
+          y: -10,
+          duration: 2 + index * 0.3,
+          repeat: -1,
+          yoyo: true,
+          ease: "sine.inOut",
+          delay: 2 + index * 0.2,
+        });
+      }
+    });
+
+  }, []);
 
   return (
-    <motion.div
+    <div
       ref={containerRef}
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      transition={{ duration: 0.8, ease: 'easeInOut' }}
-      className="absolute inset-0 w-full h-full flex items-center justify-center overflow-hidden"
-      style={{
-        zIndex: 10,
-        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-      }}
+      className="absolute inset-0 w-full h-full flex items-center justify-center overflow-hidden bg-gradient-to-br from-white via-gray-50 to-gray-100"
     >
-      {/* Animated background gradient */}
+      {/* Fixed Logo - Top Left */}
+      <div 
+        ref={logoRef}
+        className="fixed top-0 left-0 right-0 z-50 px-6 md:px-12 py-6 flex items-center gap-3 opacity-0"
+      >
+        <img
+          src="/societe-des-boissons-du-maroc--600-removebg-preview.png"
+          alt="Société des Boissons du Maroc"
+          className="h-12 md:h-16 w-auto object-contain drop-shadow-lg"
+        />
+        <div className="h-12 md:h-16 w-px bg-gray-400/50"></div>
+        <span className="text-xl md:text-2xl font-bold drop-shadow-md">
+          <span className="text-blue-600">Enquête</span>
+          <span className="text-purple-600"> IT</span>
+        </span>
+      </div>
+
+      {/* Decorative Background Elements */}
       <motion.div
-        className="absolute inset-0"
+        className="absolute top-20 left-10 w-64 h-64 bg-blue-200/30 rounded-full blur-3xl"
         animate={{
-          background: [
-            'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-            'linear-gradient(135deg, #764ba2 0%, #667eea 100%)',
-            'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-          ],
+          scale: [1, 1.2, 1],
+          opacity: [0.3, 0.5, 0.3],
         }}
         transition={{
           duration: 8,
           repeat: Infinity,
-          ease: 'easeInOut',
+          ease: "easeInOut",
+        }}
+      />
+      <motion.div
+        className="absolute bottom-20 right-10 w-80 h-80 bg-purple-200/30 rounded-full blur-3xl"
+        animate={{
+          scale: [1, 1.3, 1],
+          opacity: [0.3, 0.5, 0.3],
+        }}
+        transition={{
+          duration: 10,
+          repeat: Infinity,
+          ease: "easeInOut",
+          delay: 1,
         }}
       />
 
-      {/* Confetti container */}
-      <div ref={confettiRef} />
-
-      {/* Content */}
-      <div className="relative z-10 w-full max-w-3xl mx-auto px-6 py-12 text-center">
-        <AnimatePresence mode="wait">
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -30 }}
-            transition={{ duration: 0.6, ease: 'easeOut' }}
-            className="space-y-8"
-          >
-            {/* Success Icon */}
-            <motion.div
-              initial={{ scale: 0, rotate: -180 }}
-              animate={{ scale: 1, rotate: 0 }}
-              transition={{
-                type: "spring",
-                stiffness: 200,
-                damping: 15,
-                delay: 0.2,
-              }}
-              className="flex justify-center"
-            >
-              <div className="relative">
-                <motion.div
-                  animate={{
-                    scale: [1, 1.1, 1],
-                  }}
-                  transition={{
-                    duration: 2,
-                    repeat: Infinity,
-                    ease: 'easeInOut',
-                  }}
-                  className="w-24 h-24 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center border-4 border-white/30"
-                >
-                  <CheckCircle2 className="w-14 h-14 text-white" strokeWidth={2.5} />
-                </motion.div>
-                <motion.div
-                  animate={{
-                    rotate: 360,
-                  }}
-                  transition={{
-                    duration: 20,
-                    repeat: Infinity,
-                    ease: 'linear',
-                  }}
-                  className="absolute inset-0 flex items-center justify-center"
-                >
-                  <Sparkles className="w-6 h-6 text-white/60" />
-                </motion.div>
+      {/* Main Content */}
+      <div className="relative z-10 w-full max-w-6xl mx-auto px-6 py-12">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+          
+          {/* Left Side - Illustration/Icons */}
+          <div className="flex items-center justify-center">
+            <div className="relative w-full max-w-md">
+              
+              {/* Large Checkmark Circle */}
+              <div ref={checkmarkRef} className="relative z-10 mx-auto w-48 h-48 mb-8">
+                <div className="absolute inset-0 bg-gradient-to-br from-green-400 to-emerald-500 rounded-full flex items-center justify-center shadow-2xl">
+                  <CheckCircle2 className="w-24 h-24 text-white" strokeWidth={2.5} />
+                </div>
+                <div className="absolute inset-0 bg-gradient-to-br from-green-400 to-emerald-500 rounded-full blur-xl opacity-50 animate-pulse"></div>
               </div>
-            </motion.div>
 
-            {/* Main Message */}
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.4, duration: 0.6 }}
-              className="space-y-4"
-            >
-              <h1 className="text-5xl sm:text-6xl font-bold text-white font-inter leading-tight">
-                Merci pour votre participation
+              {/* Floating Cards */}
+              <div className="relative">
+                {/* Card 1 - Top */}
+                <div
+                  ref={card1Ref}
+                  className="absolute -top-8 left-8 bg-white rounded-2xl p-4 shadow-xl border-2 border-blue-200 opacity-0"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="bg-blue-500 rounded-lg p-2">
+                      <Sparkles className="w-5 h-5 text-white" />
+                    </div>
+                    <div>
+                      <div className="text-xs text-gray-500 font-medium">Réponses</div>
+                      <div className="text-lg font-bold text-gray-900">23/23</div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Card 2 - Middle Right */}
+                <div
+                  ref={card2Ref}
+                  className="absolute top-16 -right-4 bg-white rounded-2xl p-4 shadow-xl border-2 border-purple-200 opacity-0"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="bg-purple-500 rounded-lg p-2">
+                      <TrendingUp className="w-5 h-5 text-white" />
+                    </div>
+                    <div>
+                      <div className="text-xs text-gray-500 font-medium">Progression</div>
+                      <div className="text-lg font-bold text-gray-900">100%</div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Card 3 - Bottom */}
+                <div
+                  ref={card3Ref}
+                  className="absolute top-40 left-4 bg-white rounded-2xl p-4 shadow-xl border-2 border-green-200 opacity-0"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="bg-green-500 rounded-lg p-2">
+                      <Award className="w-5 h-5 text-white" />
+                    </div>
+                    <div>
+                      <div className="text-xs text-gray-500 font-medium">Statut</div>
+                      <div className="text-lg font-bold text-gray-900">Terminé</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Right Side - Text Content */}
+          <div className="text-left space-y-6">
+            <div ref={titleRef} className="opacity-0">
+              <h1 className="text-5xl md:text-6xl font-extrabold leading-tight mb-4">
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-600">
+                  Merci pour
+                </span>
+                <br />
+                <span className="text-gray-900">Votre Participation!</span>
               </h1>
-              <motion.p
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.6, duration: 0.6 }}
-                className="text-xl sm:text-2xl text-white/90 font-inter font-medium"
-              >
-                Votre avis illumine 2025
-              </motion.p>
-            </motion.div>
+              <div className="h-2 w-32 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full"></div>
+            </div>
 
-            {/* Sub Message */}
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.8, duration: 0.6 }}
-              className="space-y-6"
-            >
-              <p className="text-lg text-white/80 font-inter max-w-2xl mx-auto leading-relaxed">
-                Vos réponses ont été enregistrées avec succès. 
-                Votre contribution nous aide à améliorer continuellement nos services IT 
-                et à créer une expérience encore plus fluide pour toute l'équipe SBM.
+            <div ref={subtitleRef} className="opacity-0 space-y-4">
+              <p className="text-lg md:text-xl text-gray-700 leading-relaxed font-medium">
+                Votre avis est <span className="text-blue-600 font-bold">précieux</span> pour améliorer nos services IT.
               </p>
+              
+              <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 border-2 border-gray-200 shadow-lg">
+                <p className="text-gray-800 leading-relaxed">
+                  ✅ <strong>Vos réponses ont été enregistrées</strong>
+                  <br />
+                  📊 Nos équipes analyseront vos retours
+                  <br />
+                  🚀 Nous travaillons à améliorer votre expérience IT
+                </p>
+              </div>
 
-              {/* Decorative line */}
-              <motion.div
-                initial={{ width: 0 }}
-                animate={{ width: '100%' }}
-                transition={{ delay: 1, duration: 0.8, ease: 'easeOut' }}
-                className="h-px bg-white/30 mx-auto max-w-md"
-              />
-            </motion.div>
+              <p className="text-base text-gray-600">
+                L'équipe DSI vous remercie pour le temps consacré à cette enquête.
+              </p>
+            </div>
 
-            {/* Return Button */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 1.2, duration: 0.6 }}
-              className="pt-4"
+            {/* Action Button */}
+            <button
+              ref={buttonRef}
+              onClick={onReturnToStart}
+              className="opacity-0 group relative px-8 py-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-bold text-lg rounded-xl shadow-lg hover:shadow-2xl transition-all duration-300 hover:scale-105 overflow-hidden"
             >
-              <motion.button
-                onClick={onReturnToStart}
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                className="px-8 py-4 rounded-2xl bg-white text-gray-900 font-bold text-lg shadow-xl hover:shadow-2xl transition-all duration-300 font-inter"
-              >
+              <span className="relative z-10 flex items-center gap-2">
                 Retour à l'accueil
-              </motion.button>
-            </motion.div>
-          </motion.div>
-        </AnimatePresence>
+                <motion.span
+                  animate={{ x: [0, 5, 0] }}
+                  transition={{ duration: 1.5, repeat: Infinity }}
+                >
+                  →
+                </motion.span>
+              </span>
+              <div className="absolute inset-0 bg-gradient-to-r from-purple-600 to-blue-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+            </button>
+          </div>
+        </div>
       </div>
-
-      {/* Floating particles */}
-      {typeof window !== 'undefined' && [...Array(20)].map((_, i) => (
-        <motion.div
-          key={i}
-          className="absolute w-2 h-2 bg-white/20 rounded-full"
-          initial={{
-            x: Math.random() * (typeof window !== 'undefined' ? window.innerWidth : 1920),
-            y: (typeof window !== 'undefined' ? window.innerHeight : 1080) + 20,
-            opacity: 0,
-          }}
-          animate={{
-            y: -20,
-            opacity: [0, 1, 0],
-          }}
-          transition={{
-            duration: Math.random() * 3 + 2,
-            repeat: Infinity,
-            delay: Math.random() * 2,
-            ease: 'linear',
-          }}
-        />
-      ))}
-    </motion.div>
+    </div>
   );
 }
-

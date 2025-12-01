@@ -14,6 +14,9 @@ interface ModernChoiceCardProps {
   accentColor?: string;
   icon?: LucideIcon;
   isFirstQuestion?: boolean;
+  emoji?: string;
+  title?: string;
+  description?: string;
 }
 
 export default function ModernChoiceCard({
@@ -25,7 +28,12 @@ export default function ModernChoiceCard({
   accentColor = '#0EA5E9',
   icon: Icon,
   isFirstQuestion = false,
+  emoji,
+  title,
+  description,
 }: ModernChoiceCardProps) {
+  // Check if this is a two-line format (has title and description)
+  const isTwoLineFormat = title && description;
   return (
     <motion.button
       onClick={onClick}
@@ -37,32 +45,34 @@ export default function ModernChoiceCard({
         ease: [0.25, 0.4, 0.25, 1],
       }}
       whileHover={{ 
-        scale: 1.03,
-        y: -6,
+        scale: 1.02,
+        y: -4,
         transition: { duration: 0.2 },
       }}
-      whileTap={{ scale: 0.97 }}
+      whileTap={{ scale: 0.98 }}
       className={cn(
         "relative w-full rounded-2xl text-left transition-all duration-300",
-        "border-2 font-inter font-medium",
-        "focus:outline-none focus:ring-4 focus:ring-offset-2 focus:ring-cyan-500/50",
+        "border-2 font-inter font-semibold",
+        "focus:outline-none focus:ring-4 focus:ring-offset-2",
         "group overflow-hidden",
         // Glassmorphism effect
-        "backdrop-blur-md",
-        // Larger for first question
+        "backdrop-blur-xl",
+        // Larger for first question or two-line format
         isFirstQuestion 
           ? "px-8 py-6 text-lg sm:text-xl"
-          : "px-6 py-5 text-base sm:text-lg",
-        // Consistent sizing and contrast
+          : isTwoLineFormat
+          ? "px-7 py-6 text-base sm:text-lg"
+          : "px-6 py-4 text-base sm:text-lg",
+        // Bright theme with high contrast
         isSelected
-          ? "bg-white/90 border-current shadow-xl text-gray-900"
-          : "bg-white/40 border-white/30 hover:bg-white/60 hover:border-white/50 text-gray-800"
+          ? "bg-white border-current shadow-2xl text-gray-900"
+          : "bg-white/80 border-gray-300 hover:bg-white hover:border-gray-400 text-gray-800 hover:shadow-2xl hover:-translate-y-1"
       )}
       style={{
         borderColor: isSelected ? accentColor : undefined,
         boxShadow: isSelected 
-          ? `0 10px 40px ${accentColor}30, 0 0 0 1px ${accentColor}20` 
-          : '0 4px 20px rgba(0, 0, 0, 0.05)',
+          ? `0 20px 60px ${accentColor}50, 0 0 0 2px ${accentColor}40, inset 0 1px 0 rgba(255,255,255,0.8)` 
+          : '0 8px 32px rgba(0, 0, 0, 0.1)',
       }}
     >
       {/* Glassmorphism background with gradient */}
@@ -115,8 +125,19 @@ export default function ModernChoiceCard({
       {/* Content - Consistent Typography */}
       <div className="relative flex items-center justify-between gap-4 z-10">
         <div className="flex items-center gap-3 flex-1">
-          {/* Icon - Larger and animated for first question */}
-          {Icon && (
+          {/* Emoji or Icon */}
+          {emoji ? (
+            <motion.div
+              animate={isSelected ? { scale: [1, 1.2, 1], rotate: [0, 10, -10, 0] } : {}}
+              transition={{ duration: 0.5 }}
+              className={cn(
+                "flex-shrink-0 leading-none",
+                isFirstQuestion ? "text-4xl" : isTwoLineFormat ? "text-4xl" : "text-3xl"
+              )}
+            >
+              {emoji}
+            </motion.div>
+          ) : Icon && (
             <motion.div
               animate={isSelected ? { scale: [1, 1.2, 1], rotate: [0, 10, -10, 0] } : {}}
               transition={{ duration: 0.5 }}
@@ -124,18 +145,38 @@ export default function ModernChoiceCard({
                 "flex-shrink-0",
                 isFirstQuestion ? "w-8 h-8" : "w-6 h-6"
               )}
-              style={{ color: isSelected ? accentColor : '#6B7280' }}
+              style={{ color: isSelected ? accentColor : '#4B5563' }}
             >
               <Icon className="w-full h-full" />
             </motion.div>
           )}
-          <span className={cn(
-            "flex-1",
-            isFirstQuestion ? "text-lg sm:text-xl" : "text-base sm:text-lg",
-            isSelected ? "text-gray-900 font-bold" : "text-gray-800 font-medium"
-          )}>
-            {label}
-          </span>
+          
+          {/* Two-line format (title + description) or single line */}
+          {isTwoLineFormat ? (
+            <div className="flex-1 space-y-2">
+              <div className={cn(
+                "font-extrabold leading-tight",
+                isFirstQuestion ? "text-xl sm:text-2xl" : "text-lg sm:text-xl",
+                isSelected ? "text-gray-900" : "text-gray-800 group-hover:text-gray-900"
+              )}>
+                {title}
+              </div>
+              <div className={cn(
+                "text-sm sm:text-base leading-relaxed font-medium",
+                isSelected ? "text-gray-700" : "text-gray-600 group-hover:text-gray-700"
+              )}>
+                {description}
+              </div>
+            </div>
+          ) : (
+            <span className={cn(
+              "flex-1",
+              isFirstQuestion ? "text-lg sm:text-xl" : "text-base sm:text-lg",
+              isSelected ? "text-gray-900 font-extrabold" : "text-gray-800 font-semibold group-hover:text-gray-900 group-hover:font-bold"
+            )}>
+              {label}
+            </span>
+          )}
         </div>
         
         {/* Check icon with section color */}
