@@ -26,42 +26,38 @@ export function useQuestionNavigation() {
     isProcessingRef.current = true;
     
     // Save current answer and move to next question
-    // Use functional updates to avoid stale closure issues
     startTransition(() => {
-      setCurrentQuestionIndex((prevIndex) => {
-        const currentQ = questions[prevIndex];
-        
-        // Save the answer immediately
-        setAnswers((prevAnswers) => [
+      const currentQ = questions[currentQuestionIndex];
+      
+      // Save the answer
+      setAnswers((prevAnswers) => {
+        const newAnswers = [
           ...prevAnswers,
           {
             questionId: currentQ.id,
             answer,
           },
-        ]);
-
-        // Small delay before moving to next question for smooth transition
-        setTimeout(() => {
-          // Move to next question if not last
-          // Use prevIndex directly to avoid closure issues
-          if (prevIndex < questions.length - 1) {
-            setCurrentQuestionIndex(prevIndex + 1);
-          } else {
-            // Handle survey completion
-            setAnswers((finalAnswers) => {
-              console.log("Survey completed!", finalAnswers);
-              setIsCompleted(true);
-              return finalAnswers;
-            });
-          }
-          // Reset processing flag after state update
-          isProcessingRef.current = false;
-        }, 220);
-
-        return prevIndex; // Return current index (don't change it yet)
+        ];
+        
+        // If this is the last question, mark as completed
+        if (currentQuestionIndex === questions.length - 1) {
+          console.log("Survey completed!", newAnswers);
+          setTimeout(() => setIsCompleted(true), 100);
+        }
+        
+        return newAnswers;
       });
+
+      // Small delay before moving to next question for smooth transition
+      setTimeout(() => {
+        if (currentQuestionIndex < questions.length - 1) {
+          setCurrentQuestionIndex(currentQuestionIndex + 1);
+        }
+        // Reset processing flag after state update
+        isProcessingRef.current = false;
+      }, 220);
     });
-  }, [startTransition]);
+  }, [currentQuestionIndex, startTransition]);
 
   const goToPreviousQuestion = useCallback(() => {
     if (!isFirstQuestion) {

@@ -31,6 +31,7 @@ import { NextRequest, NextResponse } from 'next/server';
 export async function POST(request: NextRequest) {
   try {
     const powerAutomateUrl = process.env.POWER_AUTOMATE_SUBMIT_URL;
+    const apiKey = process.env.POWER_AUTOMATE_API_KEY;
 
     if (!powerAutomateUrl) {
       return NextResponse.json(
@@ -39,9 +40,16 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    if (!apiKey) {
+      return NextResponse.json(
+        { error: 'API key not configured. Please set POWER_AUTOMATE_API_KEY in .env.local' },
+        { status: 500 }
+      );
+    }
+
     // Parse request body
     const body = await request.json();
-    const { nom, prenom, userId, answers } = body;
+    const { nom, prenom, answers } = body;
 
     // Validate required fields
     if (!nom || !prenom) {
@@ -58,26 +66,26 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Generate userId if not provided
-    const finalUserId = userId || `user_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-
-    // Prepare data for Power Automate
+    // Prepare data for Power Automate (matching your flow's expected format)
+    // Note: We're sending question text instead of Dataverse GUID since questions are hardcoded
     const payload = {
       nom: nom.trim(),
       prenom: prenom.trim(),
-      userId: finalUserId,
-      createdOn: new Date().toISOString(),
       answers: answers.map((answer: any) => ({
-        questionId: answer.questionId,
+        questionId: String(answer.questionId), // Numeric ID from hardcoded questions
+        questionText: answer.questionText || `Question ${answer.questionId}`, // Question text for reference
         reponse: String(answer.answer), // Convert to string for Dataverse
       })),
     };
 
-    // Call Power Automate flow
+    console.log('Submitting to Power Automate:', JSON.stringify(payload, null, 2));
+
+    // Call Power Automate flow with API key for authentication
     const response = await fetch(powerAutomateUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        'x-api-key': apiKey, // Send API key in header
       },
       body: JSON.stringify(payload),
     });
@@ -96,8 +104,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(
       { 
         success: true, 
-        message: 'Data submitted successfully',
-        userId: finalUserId,
+        message: 'Data submitted successfully to Dataverse',
         ...data 
       },
       { status: 200 }

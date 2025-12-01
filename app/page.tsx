@@ -88,11 +88,52 @@ export default function SurveyLanding() {
     [currentQuestion]
   )
   
+  // Track if submission has been done to prevent duplicates
+  const hasSubmittedRef = useRef(false);
+  
   // Submit answers to Power Automate when form is completed
   useEffect(() => {
-    if (isCompleted && answers.length > 0 && nomRef.current?.value && prenomRef.current?.value) {
+    if (isCompleted && answers.length > 0 && nomRef.current?.value && prenomRef.current?.value && !hasSubmittedRef.current) {
+      hasSubmittedRef.current = true; // Mark as submitted immediately
+      
       const submitAnswers = async () => {
         try {
+          // Enrich answers with question text and convert choice IDs to readable text
+          const enrichedAnswers = answers.map(ans => {
+            const question = questions.find(q => q.id === ans.questionId);
+            
+            // Convert answer to readable text
+            let readableAnswer = ans.answer;
+            
+            // For choice questions, convert ID to label
+            if (question?.type === 'choice' && question.choices && typeof ans.answer === 'string') {
+              const selectedChoice = question.choices.find(c => c.id === ans.answer);
+              if (selectedChoice) {
+                readableAnswer = selectedChoice.label;
+              }
+            }
+            
+            // For multiple choice questions (array of IDs)
+            if (question?.type === 'multiple' && question.choices && Array.isArray(ans.answer)) {
+              readableAnswer = ans.answer.map(answerId => {
+                const choice = question.choices?.find(c => c.id === answerId);
+                return choice?.label || answerId;
+              }).join(', ');
+            }
+            
+            // For satisfaction questions (convert number to text)
+            if (question?.type === 'satisfaction' && typeof ans.answer === 'string') {
+              // The answer is already a satisfaction level ID, keep it or convert
+              readableAnswer = ans.answer;
+            }
+            
+            return {
+              questionId: ans.questionId,
+              questionText: question?.question || `Question ${ans.questionId}`,
+              answer: String(readableAnswer),
+            };
+          });
+
           const response = await fetch('/api/submit', {
             method: 'POST',
             headers: {
@@ -101,7 +142,7 @@ export default function SurveyLanding() {
             body: JSON.stringify({
               nom: nomRef.current?.value.trim() || '',
               prenom: prenomRef.current?.value.trim() || '',
-              answers: answers,
+              answers: enrichedAnswers,
             }),
           });
 
