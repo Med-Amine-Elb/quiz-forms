@@ -130,78 +130,78 @@ export async function POST(request: NextRequest) {
 
 ---
 
-#### 3. **Validation des Données**
+#### 3. **Validation des Données** ✅ IMPLÉMENTÉ
 
-**Actuellement:**
+**Avant:**
 ```typescript
 if (!nom || !prenom) {
   return error;
 }
 ```
-✅ Validation basique présente
+⚠️ Validation basique seulement
 
-**À Ajouter (Recommandé):**
+**Maintenant (Implémenté):**
 ```typescript
-// Validation stricte
-import { z } from 'zod';
+// Validation stricte avec Zod
+import { validateSubmitRequest, formatValidationErrors } from '@/lib/validation';
 
-const schema = z.object({
-  nom: z.string().min(2).max(50).regex(/^[a-zA-ZÀ-ÿ\s-]+$/),
-  prenom: z.string().min(2).max(50).regex(/^[a-zA-ZÀ-ÿ\s-]+$/),
-  answers: z.array(z.object({
-    questionId: z.string(),
-    questionText: z.string(),
-    reponse: z.string().max(1000)
-  })).min(1).max(50)
-});
-
-const result = schema.safeParse(body);
-if (!result.success) {
-  return NextResponse.json({ error: 'Invalid data' }, { status: 400 });
+const validation = validateSubmitRequest(body);
+if (!validation.success) {
+  const errorMessages = formatValidationErrors(validation.errors);
+  return NextResponse.json({ 
+    error: 'Validation failed',
+    details: errorMessages 
+  }, { status: 400 });
 }
 ```
 
-**Niveau de sécurité actuel:** ⭐⭐⭐ (Basique)
-**Niveau après amélioration:** ⭐⭐⭐⭐⭐
+**Fonctionnalités:**
+- ✅ Validation de longueur (2-50 caractères pour noms)
+- ✅ Validation de format (regex pour caractères français)
+- ✅ Validation de type (TypeScript type-safe)
+- ✅ Sanitization automatique (trim, normalize)
+- ✅ Messages d'erreur en français/anglais
+- ✅ Protection contre injection
+
+**Fichier:** `lib/validation.ts`
+**Guide:** `lib/VALIDATION_GUIDE.md`
+
+**Niveau de sécurité actuel:** ⭐⭐⭐⭐⭐ (Excellent)
 
 ---
 
-#### 4. **Protection CORS** (Cross-Origin)
+#### 4. **Protection CORS** (Cross-Origin) ✅ IMPLÉMENTÉ
 
-**Actuellement:**
+**Avant:**
 - ⚠️ Pas de restriction CORS
+- ⚠️ N'importe quel site pouvait appeler l'API
 
-**Recommandé:**
+**Maintenant (Implémenté):**
 ```typescript
 // middleware.ts
-import { NextResponse } from 'next/server';
-
-export function middleware(request: NextRequest) {
-  // Autoriser seulement votre domaine
-  const allowedOrigins = [
-    'https://votreapp.com',
-    'https://www.votreapp.com'
-  ];
-  
-  const origin = request.headers.get('origin');
-  
-  if (origin && !allowedOrigins.includes(origin)) {
-    return new NextResponse(null, {
-      status: 403,
-      statusText: 'Forbidden',
-    });
-  }
-  
-  return NextResponse.next();
-}
-
-export const config = {
-  matcher: '/api/:path*',
-};
+// Vérifie l'origine de la requête
+// Bloque les origines non autorisées
+// Gère les requêtes preflight (OPTIONS)
 ```
 
-**Niveau de sécurité actuel:** ⭐⭐⚠️ (Ouvert)
-**Niveau après amélioration:** ⭐⭐⭐⭐⭐
+**Fonctionnalités:**
+- ✅ Validation d'origine (whitelist)
+- ✅ Gestion des requêtes preflight (OPTIONS)
+- ✅ Configuration via variable d'environnement
+- ✅ Mode développement (localhost autorisé)
+- ✅ Mode production (origines configurées uniquement)
+- ✅ Headers CORS corrects
+
+**Configuration:**
+```bash
+# .env.local
+ALLOWED_ORIGINS=https://votreapp.com,https://www.votreapp.com
+```
+
+**Fichier:** `middleware.ts`
+**Guide:** `lib/CORS_GUIDE.md`
+
+**Niveau de sécurité actuel:** ⭐⭐⭐⭐⭐ (Excellent)
 
 ---
 
@@ -236,9 +236,9 @@ export const config = {
 | **Architecture** | ⭐⭐⭐⭐⭐ | - |
 | **Variables Env** | ⭐⭐⭐⭐⭐ | - |
 | **HTTPS** | ⭐⭐⭐⭐⭐ (prod) | - |
-| **Rate Limiting** | ❌ | ⭐⭐⭐⭐⭐ (À ajouter) |
-| **Validation** | ⭐⭐⭐ | ⭐⭐⭐⭐⭐ (Zod) |
-| **CORS** | ⭐⭐ | ⭐⭐⭐⭐⭐ (Middleware) |
+| **Rate Limiting** | ⭐⭐⭐⭐⭐ | ✅ Implémenté |
+| **Validation** | ⭐⭐⭐⭐⭐ | ✅ Implémenté (Zod) |
+| **CORS** | ⭐⭐⭐⭐⭐ | ✅ Implémenté (Middleware) |
 | **Dataverse** | ⭐⭐⭐⭐⭐ | - |
 | **Power Automate** | ⭐⭐⭐⭐⭐ | - |
 
@@ -252,23 +252,26 @@ export const config = {
 **Solution:** Utiliser une clé forte (64 caractères)
 **Priorité:** 🔴 Haute (avant production)
 
-### 2. **Pas de Rate Limiting** ⚠️
+### 2. **Rate Limiting** ✅ RÉSOLU
 **Risque:** Spam de requêtes
 **Impact:** Surcharge du système, coûts Azure
-**Solution:** Implémenter rate limiting
-**Priorité:** 🟠 Moyenne
+**Solution:** ✅ Implémenté avec in-memory rate limiting
+**Fichier:** `lib/ratelimit.ts`
+**Priorité:** ✅ Complété
 
-### 3. **Validation Basique** ⚠️
+### 3. **Validation des Données** ✅ RÉSOLU
 **Risque:** Données malformées
 **Impact:** Erreurs dans Dataverse
-**Solution:** Validation stricte avec Zod
-**Priorité:** 🟡 Basse (déjà OK pour démarrer)
+**Solution:** ✅ Validation stricte avec Zod implémentée
+**Fichier:** `lib/validation.ts`
+**Priorité:** ✅ Complété
 
-### 4. **Pas de CORS** ⚠️
+### 4. **CORS Protection** ✅ RÉSOLU
 **Risque:** N'importe quel site peut appeler votre API
 **Impact:** Utilisation non autorisée
-**Solution:** Middleware CORS
-**Priorité:** 🟠 Moyenne
+**Solution:** ✅ Middleware CORS implémenté avec whitelist d'origines
+**Fichier:** `middleware.ts`
+**Priorité:** ✅ Complété
 
 ---
 
@@ -398,9 +401,9 @@ npm install @upstash/ratelimit @upstash/redis
 
 ### Recommandé (Staging): ⚠️
 - [ ] API key forte (64 chars)
-- [ ] Rate limiting
-- [ ] Validation Zod
-- [ ] CORS middleware
+- [x] Rate limiting ✅
+- [x] Validation Zod ✅
+- [x] CORS middleware ✅
 - [ ] HTTPS
 
 ### Production: ⚠️
@@ -437,8 +440,8 @@ Si vous pensez que votre API key a été compromise:
 
 **Actions prioritaires avant production:**
 1. 🔴 API key forte
-2. 🟠 Rate limiting
-3. 🟡 Validation Zod
+2. ✅ Rate limiting (Complété)
+3. ✅ Validation Zod (Complété)
 
 ---
 

@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef, useTransition } from "react";
+import { useState, useCallback, useRef, useTransition, useEffect } from "react";
 import { questions } from "@/data/questions";
 
 export interface QuestionAnswer {
@@ -6,12 +6,85 @@ export interface QuestionAnswer {
   answer: string | number | string[];
 }
 
+const STORAGE_KEY = 'survey_progress';
+const STORAGE_ANSWERS_KEY = 'survey_answers';
+const STORAGE_INDEX_KEY = 'survey_current_index';
+const STORAGE_COMPLETED_KEY = 'survey_completed';
+
+// Load saved progress from localStorage
+function loadSavedProgress() {
+  if (typeof window === 'undefined') {
+    return { answers: [], currentIndex: 0, isCompleted: false };
+  }
+
+  // Don't restore if already submitted
+  const isSubmitted = localStorage.getItem('survey_submitted') === 'true';
+  if (isSubmitted) {
+    return { answers: [], currentIndex: 0, isCompleted: false };
+  }
+
+  try {
+    const savedAnswers = localStorage.getItem(STORAGE_ANSWERS_KEY);
+    const savedIndex = localStorage.getItem(STORAGE_INDEX_KEY);
+    const savedCompleted = localStorage.getItem(STORAGE_COMPLETED_KEY);
+
+    return {
+      answers: savedAnswers ? JSON.parse(savedAnswers) : [],
+      currentIndex: savedIndex ? parseInt(savedIndex, 10) : 0,
+      isCompleted: savedCompleted === 'true',
+    };
+  } catch (error) {
+    console.error('Error loading saved progress:', error);
+    return { answers: [], currentIndex: 0, isCompleted: false };
+  }
+}
+
+// Save progress to localStorage
+function saveProgress(answers: QuestionAnswer[], currentIndex: number, isCompleted: boolean) {
+  if (typeof window === 'undefined') return;
+
+  try {
+    localStorage.setItem(STORAGE_ANSWERS_KEY, JSON.stringify(answers));
+    localStorage.setItem(STORAGE_INDEX_KEY, currentIndex.toString());
+    localStorage.setItem(STORAGE_COMPLETED_KEY, isCompleted.toString());
+  } catch (error) {
+    console.error('Error saving progress:', error);
+  }
+}
+
+// Clear saved progress
+function clearSavedProgress() {
+  if (typeof window === 'undefined') return;
+
+  try {
+    localStorage.removeItem(STORAGE_ANSWERS_KEY);
+    localStorage.removeItem(STORAGE_INDEX_KEY);
+    localStorage.removeItem(STORAGE_COMPLETED_KEY);
+  } catch (error) {
+    console.error('Error clearing saved progress:', error);
+  }
+}
+
 export function useQuestionNavigation() {
-  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
-  const [answers, setAnswers] = useState<QuestionAnswer[]>([]);
-  const [isCompleted, setIsCompleted] = useState(false);
+  // Load saved progress on mount
+  const savedProgress = loadSavedProgress();
+  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(savedProgress.currentIndex);
+  const [answers, setAnswers] = useState<QuestionAnswer[]>(savedProgress.answers);
+  const [isCompleted, setIsCompleted] = useState(savedProgress.isCompleted);
   const isProcessingRef = useRef(false);
   const [, startTransition] = useTransition();
+  const isInitializedRef = useRef(false);
+
+  // Save progress whenever answers, index, or completion status changes
+  useEffect(() => {
+    // Skip saving on initial load
+    if (!isInitializedRef.current) {
+      isInitializedRef.current = true;
+      return;
+    }
+    
+    saveProgress(answers, currentQuestionIndex, isCompleted);
+  }, [answers, currentQuestionIndex, isCompleted]);
 
   const currentQuestion = questions[currentQuestionIndex];
   const isLastQuestion = currentQuestionIndex === questions.length - 1;
@@ -73,6 +146,7 @@ export function useQuestionNavigation() {
     setCurrentQuestionIndex(0);
     setAnswers([]);
     setIsCompleted(false);
+    clearSavedProgress(); // Clear saved progress from localStorage
   }, []);
 
   const goToQuestion = useCallback((questionIndex: number) => {

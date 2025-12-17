@@ -53,13 +53,23 @@ Open [http://localhost:3000](http://localhost:3000) with your browser to see the
 
 ## 🔧 Configuration
 
-This app requires three environment variables in `.env.local`:
+This app requires environment variables in `.env.local`:
 
+### Required Variables:
 ```bash
 POWER_AUTOMATE_QUESTIONS_URL=<your-get-questions-flow-url>
 POWER_AUTOMATE_SUBMIT_URL=<your-save-answers-flow-url>
 POWER_AUTOMATE_API_KEY=<your-api-key>
 ```
+
+### Optional Variables (Security):
+```bash
+# CORS: Comma-separated list of allowed origins (production only)
+# In development, localhost is automatically allowed
+ALLOWED_ORIGINS=https://votreapp.com,https://www.votreapp.com
+```
+
+**Note:** See [SECURITY_GUIDE.md](./SECURITY_GUIDE.md) for complete security configuration.
 
 ---
 

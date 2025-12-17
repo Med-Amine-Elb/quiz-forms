@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { rateLimit, rateLimitConfigs } from '@/lib/ratelimit';
 
 /**
  * API Route: GET /api/questions
@@ -21,6 +22,28 @@ import { NextRequest, NextResponse } from 'next/server';
 
 export async function GET(request: NextRequest) {
   try {
+    // Rate limiting - Prevent excessive requests
+    const ip = rateLimit.getIP(request);
+    const { success, remaining, resetTime } = rateLimit.check(ip, rateLimitConfigs.questions);
+    
+    if (!success) {
+      const retryAfter = Math.ceil((resetTime - Date.now()) / 1000);
+      return NextResponse.json(
+        { 
+          error: 'Trop de requêtes. Veuillez patienter.',
+          message: 'Too many requests. Please try again later.'
+        },
+        { 
+          status: 429,
+          headers: {
+            'X-RateLimit-Remaining': '0',
+            'X-RateLimit-Reset': resetTime.toString(),
+            'Retry-After': retryAfter.toString(),
+          }
+        }
+      );
+    }
+
     const powerAutomateUrl = process.env.POWER_AUTOMATE_QUESTIONS_URL;
     const apiKey = process.env.POWER_AUTOMATE_API_KEY;
 
@@ -116,7 +139,13 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ 
       questions: transformedQuestions,
       success: true 
-    }, { status: 200 });
+    }, { 
+      status: 200,
+      headers: {
+        'X-RateLimit-Remaining': remaining.toString(),
+        'X-RateLimit-Reset': resetTime.toString(),
+      }
+    });
   } catch (error) {
     console.error('Error fetching questions:', error);
     return NextResponse.json(

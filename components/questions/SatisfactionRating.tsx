@@ -160,7 +160,7 @@ export default function SatisfactionRating({
   };
 
   return (
-    <div className="w-full max-w-5xl mx-auto space-y-6 py-6">
+    <div className="w-full max-w-4xl mx-auto space-y-4 py-2">
       {/* Celebration Effect */}
       <AnimatePresence>
         {showCelebration && (

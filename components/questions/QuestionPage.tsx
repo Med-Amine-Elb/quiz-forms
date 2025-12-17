@@ -68,13 +68,14 @@ const QuestionPage = forwardRef<HTMLDivElement, QuestionPageProps>(({
   return (
       <div
         ref={ref}
-        className="absolute inset-0 w-full h-full flex flex-col overflow-hidden"
+        className="absolute inset-0 w-full h-full flex flex-col overflow-hidden bg-transparent"
         style={{
           zIndex: 2,
           willChange: 'transform',
           overflowX: 'hidden',
           backfaceVisibility: 'hidden',
           WebkitBackfaceVisibility: 'hidden',
+          backgroundColor: 'transparent',
         }}
       >
       {/* Welcome Message for First Question */}
@@ -101,7 +102,7 @@ const QuestionPage = forwardRef<HTMLDivElement, QuestionPageProps>(({
 
       {/* Page Content - Adjusted for fixed progress bar - Hidden when section intro is showing */}
       <motion.div 
-        className="w-full h-full relative flex items-center overflow-hidden pt-24 z-10"
+        className="w-full h-full relative flex flex-col lg:flex-row items-stretch px-4 lg:px-8 overflow-hidden pt-24 z-10 bg-transparent"
         initial={false}
         animate={{
           opacity: showSectionIntro ? 0 : 1,
@@ -112,12 +113,21 @@ const QuestionPage = forwardRef<HTMLDivElement, QuestionPageProps>(({
         }}
         style={{
           pointerEvents: showSectionIntro ? 'none' : 'auto',
+          backgroundColor: 'transparent',
         }}
       >
-        {/* Left Side - Content centered with Better Spacing */}
-        <div className="w-full lg:w-2/3 flex flex-col items-center justify-center px-6 py-8 overflow-y-auto overflow-x-hidden">
-          {/* Animated Question Card - Larger for first question */}
-          <div ref={questionNumberRef} className={cn("w-full mb-8", isFirstQuestion && "max-w-4xl")}>
+        {/* Left Side - Content */}
+        <div className={cn(
+          "w-full lg:w-2/3 flex flex-col items-center lg:items-start justify-start px-2 lg:px-4 py-4 lg:py-6 relative z-20",
+          // Only allow scroll for specific questions that need it, not question 7
+          questionNumber === 7 ? "overflow-hidden" : "overflow-y-auto overflow-x-hidden"
+        )}>
+          {/* Animated Question Card - Conditional sizing based on question number */}
+          <div ref={questionNumberRef} className={cn(
+            "w-full mt-6 mb-6 lg:mt-16 lg:mb-8",
+            // Only apply max-w-4xl to first question, not all questions
+            isFirstQuestion && "max-w-4xl"
+          )}>
             <AnimatedQuestionCard
               key={questionNumber}
               questionNumber={questionNumber}
@@ -133,10 +143,12 @@ const QuestionPage = forwardRef<HTMLDivElement, QuestionPageProps>(({
           </div>
         </div>
 
-        {/* Right Side - 3D Character positioned at max right */}
+        {/* Right Side - Lottie/3D Character */}
         {avatar && (
-          <div className="hidden lg:flex absolute right-0 top-0 bottom-0 w-1/3 items-center justify-end z-10 overflow-hidden">
-            {avatar}
+          <div className="w-full lg:w-1/3 hidden lg:flex items-center justify-center z-0 pointer-events-none">
+            <div className="w-full h-full max-w-[1400px] flex items-center justify-center">
+              {avatar}
+            </div>
           </div>
         )}
       </motion.div>

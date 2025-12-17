@@ -15,13 +15,26 @@ import { preloadQuestionType } from '@/lib/preloadQuestionComponents'
 import { getSectionForQuestion } from '@/lib/questionSections'
 
 // Lazy load heavy components
-const Avatar3D = dynamic(
-  () => import('@/src/components/Avatar3D'),
+// const Avatar3D = dynamic(
+//   () => import('@/src/components/Avatar3D'),
+//   { 
+//     ssr: false, 
+//     loading: () => (
+//       <div className="flex items-center justify-center w-full h-full">
+//         <div className="animate-pulse text-white/20">Loading avatar...</div>
+//       </div>
+//     )
+//   }
+// )
+
+// Lottie Character - Much lighter than 3D Avatar!
+const LottieCharacter = dynamic(
+  () => import('@/components/animations/LottieCharacter'),
   { 
     ssr: false, 
     loading: () => (
       <div className="flex items-center justify-center w-full h-full">
-        <div className="animate-pulse text-white/20">Loading avatar...</div>
+        <div className="w-12 h-12 border-3 border-white/20 border-t-white/60 rounded-full animate-spin" />
       </div>
     )
   }
@@ -53,9 +66,11 @@ export default function SurveyLanding() {
   const logoRef = useRef(null)
   const nomRef = useRef<HTMLInputElement>(null)
   const prenomRef = useRef<HTMLInputElement>(null)
+  const emailRef = useRef<HTMLInputElement>(null)
+  const codeRef = useRef<HTMLInputElement>(null)
   const buttonRef = useRef<HTMLButtonElement>(null)
   const errorMessageRef = useRef<HTMLDivElement>(null)
-  const avatarRef = useRef(null)
+  // const avatarRef = useRef(null)
   const currentPageRef = useRef(null)
   const nextPageRef = useRef(null)
   const nextPageAvatarRef = useRef(null)
@@ -68,6 +83,108 @@ export default function SurveyLanding() {
   const [currentSlide, setCurrentSlide] = useState(0)
   const [isAutoRotating, setIsAutoRotating] = useState(true)
   const slideTimerRef = useRef<NodeJS.Timeout | null>(null)
+  
+  // Email verification state
+  const [emailVerified, setEmailVerified] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const savedEmail = localStorage.getItem('survey_email');
+      const verifiedEmail = localStorage.getItem('survey_verified_email');
+      // Only restore verified state if emails match
+      return localStorage.getItem('survey_email_verified') === 'true' && 
+             savedEmail === verifiedEmail;
+    }
+    return false;
+  })
+  const [codeSent, setCodeSent] = useState(false)
+  const [isRequestingCode, setIsRequestingCode] = useState(false)
+  const [isVerifyingCode, setIsVerifyingCode] = useState(false)
+  const [emailError, setEmailError] = useState('')
+  const [codeError, setCodeError] = useState('')
+  const [codeSuccess, setCodeSuccess] = useState('')
+
+  // Load saved form data on mount
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      // Don't restore if already submitted
+      const isSubmitted = localStorage.getItem('survey_submitted') === 'true';
+      if (isSubmitted) {
+        return;
+      }
+
+      const savedEmail = localStorage.getItem('survey_email');
+      const savedNom = localStorage.getItem('survey_nom');
+      const savedPrenom = localStorage.getItem('survey_prenom');
+      
+      if (savedEmail && emailRef.current) {
+        emailRef.current.value = savedEmail;
+      }
+      if (savedNom && nomRef.current) {
+        nomRef.current.value = savedNom;
+      }
+      if (savedPrenom && prenomRef.current) {
+        prenomRef.current.value = savedPrenom;
+      }
+    }
+  }, []);
+
+  // Save form data to localStorage when it changes
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      if (emailRef.current?.value) {
+        localStorage.setItem('survey_email', emailRef.current.value);
+      }
+      if (nomRef.current?.value) {
+        localStorage.setItem('survey_nom', nomRef.current.value);
+      }
+      if (prenomRef.current?.value) {
+        localStorage.setItem('survey_prenom', prenomRef.current.value);
+      }
+      localStorage.setItem('survey_email_verified', emailVerified.toString());
+    }
+  }, [emailVerified]);
+
+  // Save form data on input change (debounced)
+  useEffect(() => {
+    const handleInputChange = () => {
+      if (typeof window !== 'undefined') {
+        if (emailRef.current?.value) {
+          localStorage.setItem('survey_email', emailRef.current.value);
+        }
+        if (nomRef.current?.value) {
+          localStorage.setItem('survey_nom', nomRef.current.value);
+        }
+        if (prenomRef.current?.value) {
+          localStorage.setItem('survey_prenom', prenomRef.current.value);
+        }
+      }
+    };
+
+    const emailInput = emailRef.current;
+    const nomInput = nomRef.current;
+    const prenomInput = prenomRef.current;
+
+    if (emailInput) {
+      emailInput.addEventListener('input', handleInputChange);
+    }
+    if (nomInput) {
+      nomInput.addEventListener('input', handleInputChange);
+    }
+    if (prenomInput) {
+      prenomInput.addEventListener('input', handleInputChange);
+    }
+
+    return () => {
+      if (emailInput) {
+        emailInput.removeEventListener('input', handleInputChange);
+      }
+      if (nomInput) {
+        nomInput.removeEventListener('input', handleInputChange);
+      }
+      if (prenomInput) {
+        prenomInput.removeEventListener('input', handleInputChange);
+      }
+    };
+  }, []);
   
   // Question navigation hook
   const {
@@ -134,14 +251,20 @@ export default function SurveyLanding() {
             };
           });
 
+          // Get browser fingerprint for duplicate prevention
+          const { getOrCreateFingerprint } = await import('@/lib/browserFingerprint');
+          const fingerprint = getOrCreateFingerprint();
+
           const response = await fetch('/api/submit', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
+              'x-browser-fingerprint': fingerprint,
             },
             body: JSON.stringify({
               nom: nomRef.current?.value.trim() || '',
               prenom: prenomRef.current?.value.trim() || '',
+              email: emailRef.current?.value.trim() || '',
               answers: enrichedAnswers,
             }),
           });
@@ -149,10 +272,31 @@ export default function SurveyLanding() {
           if (!response.ok) {
             const error = await response.json();
             console.error('Failed to submit answers:', error);
+            
+            // Handle duplicate submission error
+            if (response.status === 409 && error.code === 'DUPLICATE_SUBMISSION') {
+              // User already submitted - show message
+              alert('Vous avez déjà soumis ce formulaire. Merci de votre participation!');
+              hasSubmittedRef.current = true; // Prevent retry
+            }
             // You can show an error message to the user here if needed
           } else {
             const result = await response.json();
             console.log('Answers submitted successfully:', result);
+            // Store submission in localStorage as backup
+            if (typeof window !== 'undefined') {
+              localStorage.setItem('survey_submitted', 'true');
+              localStorage.setItem('survey_submitted_at', Date.now().toString());
+              
+              // Clear survey progress after successful submission
+              localStorage.removeItem('survey_answers');
+              localStorage.removeItem('survey_current_index');
+              localStorage.removeItem('survey_completed');
+              localStorage.removeItem('survey_email');
+              localStorage.removeItem('survey_nom');
+              localStorage.removeItem('survey_prenom');
+              localStorage.removeItem('survey_email_verified');
+            }
           }
         } catch (error) {
           console.error('Error submitting answers:', error);
@@ -166,22 +310,29 @@ export default function SurveyLanding() {
   
   const questionContentRef = useRef<HTMLDivElement>(null)
   const lastSectionRef = useRef<string | null>(null)
-  const memoizedQuestionAvatar = useMemo(
-    () => (
-      <Avatar3D
-        className="w-full h-full max-w-none"
-        autoRotate={false}
-        modelPath="/animation/691dbc778e7eb12743aabf09.glb"
-        enableWaving={true}
-        cameraPosition={[0, 0.5, 4.5]}
-        cameraLookAt={[0, 0.3, 0]}
-        cameraFOV={30.5}
-        modelPosition={[0.1, -1.5, 1.2]}
-        modelScale={1.2}
-      />
-    ),
-    []
-  )
+  // Track last answer emoji for Lottie reactions
+  const [lastAnswerEmoji, setLastAnswerEmoji] = useState<string | undefined>(undefined);
+  const [isAvatarHovering, setIsAvatarHovering] = useState(false);
+  
+  // Use Lottie or 3D Avatar - Set to true for Lottie, false for 3D
+  // const USE_LOTTIE_AVATAR = true;
+
+  // const memoizedQuestionAvatar = useMemo(
+  //   () => (
+  //     <Avatar3D
+  //       className="w-full h-full max-w-none"
+  //       autoRotate={false}
+  //       modelPath="/animation/691dbc778e7eb12743aabf09.glb"
+  //       enableWaving={true}
+  //       cameraPosition={[0, 0.5, 4.5]}
+  //       cameraLookAt={[0, 0.3, 0]}
+  //       cameraFOV={30.5}
+  //       modelPosition={[0.1, -1.5, 1.2]}
+  //       modelScale={1.2}
+  //     />
+  //   ),
+  //   []
+  // )
 
   useEffect(() => {
     if (typeof window === 'undefined') return
@@ -389,9 +540,9 @@ export default function SurveyLanding() {
           if (questionContentRef.current) {
             gsap.set(questionContentRef.current, { opacity: 0, y: 20 })
           }
-          if (nextPageAvatarRef.current) {
-            gsap.set(nextPageAvatarRef.current, { opacity: 0 })
-          }
+          // if (nextPageAvatarRef.current) {
+          //   gsap.set(nextPageAvatarRef.current, { opacity: 0 })
+          // }
         }
       })
       
@@ -442,14 +593,14 @@ export default function SurveyLanding() {
               }
               
               // Fade in avatar
-              if (nextPageAvatarRef.current) {
-                gsap.to(nextPageAvatarRef.current, {
-                  opacity: 1,
-                  duration: 0.4,
-                  ease: 'power2.out',
-                  delay: 0.1,
-                })
-              }
+              // if (nextPageAvatarRef.current) {
+              //   gsap.to(nextPageAvatarRef.current, {
+              //     opacity: 1,
+              //     duration: 0.4,
+              //     ease: 'power2.out',
+              //     delay: 0.1,
+              //   })
+              // }
             }
           })
         }
@@ -567,12 +718,164 @@ export default function SurveyLanding() {
       }, 5000)
       return
     }
+    // Check email verification before proceeding
+    if (!emailVerified) {
+      setEmailError('Veuillez vérifier votre email avant de continuer')
+      return
+    }
+    
+    // Verify that the verified email matches the current email
+    const currentEmail = emailRef.current?.value.trim().toLowerCase();
+    const verifiedEmail = typeof window !== 'undefined' 
+      ? localStorage.getItem('survey_verified_email')?.toLowerCase()
+      : null;
+    
+    if (currentEmail !== verifiedEmail) {
+      setEmailError('L\'email vérifié ne correspond pas à l\'email saisi. Veuillez vérifier à nouveau.')
+      setEmailVerified(false)
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('survey_verified_email')
+        localStorage.setItem('survey_email_verified', 'false')
+      }
+      return
+    }
+    
     setShowError(false)
     setSubmitted(true)
     
     // Trigger slide animation immediately when form is valid
     slideToNextPage()
-  }, [slideToNextPage])
+  }, [slideToNextPage, emailVerified])
+
+  // Request verification code
+  const handleRequestCode = useCallback(async () => {
+    const email = emailRef.current?.value.trim()
+    
+    if (!email) {
+      setEmailError('Veuillez entrer votre email')
+      return
+    }
+    
+    // Basic email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    if (!emailRegex.test(email)) {
+      setEmailError('Format d\'email invalide')
+      return
+    }
+    
+    setIsRequestingCode(true)
+    setEmailError('')
+    setCodeError('')
+    
+    try {
+      // Add timeout to prevent hanging
+      const controller = new AbortController()
+      const timeoutId = setTimeout(() => controller.abort(), 10000) // 10 second timeout
+      
+      const response = await fetch('/api/auth/request-code', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+        signal: controller.signal,
+      })
+      
+      clearTimeout(timeoutId)
+      const data = await response.json()
+      
+      if (!response.ok) {
+        setEmailError(data.error || 'Erreur lors de l\'envoi du code')
+        return
+      }
+      
+      setCodeSent(true)
+      setCodeSuccess('Code envoyé! Vérifiez votre boîte email.')
+      // Clear success message after 3 seconds
+      setTimeout(() => setCodeSuccess(''), 3000)
+    } catch (error: any) {
+      if (error.name === 'AbortError') {
+        setEmailError('La requête a pris trop de temps. Veuillez réessayer.')
+      } else {
+        console.error('Error requesting code:', error)
+        setEmailError('Erreur de connexion. Veuillez réessayer.')
+      }
+    } finally {
+      setIsRequestingCode(false)
+    }
+  }, [])
+
+  // Verify code
+  const handleVerifyCode = useCallback(async () => {
+    const email = emailRef.current?.value.trim()
+    const code = codeRef.current?.value.trim()
+    
+    // Debug logging (only in development)
+    if (process.env.NODE_ENV !== 'production') {
+      console.log('[Frontend] Verifying code for email:', email)
+    }
+    
+    if (!email || !code) {
+      setCodeError('Veuillez entrer le code reçu')
+      return
+    }
+    
+    if (code.length !== 6) {
+      setCodeError('Le code doit contenir 6 chiffres')
+      return
+    }
+    
+    setIsVerifyingCode(true)
+    setCodeError('')
+    
+    try {
+      // Add timeout to prevent hanging
+      const controller = new AbortController()
+      const timeoutId = setTimeout(() => controller.abort(), 5000) // 5 second timeout (verification is fast)
+      
+      const requestBody = { email, code }
+      
+      const response = await fetch('/api/auth/verify-code', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(requestBody),
+        signal: controller.signal,
+      })
+      
+      clearTimeout(timeoutId)
+      const data = await response.json()
+      
+      if (!response.ok) {
+        if (response.status === 429) {
+          setCodeError('Trop de tentatives. Veuillez demander un nouveau code.')
+        } else if (response.status === 410) {
+          setCodeError('Code expiré. Veuillez demander un nouveau code.')
+        } else {
+          setCodeError(data.error || 'Code invalide')
+        }
+        return
+      }
+      
+      if (data.verified) {
+        setEmailVerified(true)
+        setCodeSuccess('Email vérifié avec succès!')
+        
+        // Save verified email to localStorage
+        if (typeof window !== 'undefined' && data.email) {
+          localStorage.setItem('survey_verified_email', data.email)
+        }
+        
+        setTimeout(() => setCodeSuccess(''), 3000)
+      }
+    } catch (error: any) {
+      if (error.name === 'AbortError') {
+        setCodeError('La requête a pris trop de temps. Veuillez réessayer.')
+      } else {
+        console.error('Error verifying code:', error)
+        setCodeError('Erreur de connexion. Veuillez réessayer.')
+      }
+    } finally {
+      setIsVerifyingCode(false)
+    }
+  }, [])
 
   // Removed handlePushComplete - no right-sliding pages
   // All transitions now use slideToNextPage which slides from right to left
@@ -950,6 +1253,153 @@ export default function SurveyLanding() {
                       />
                     </div>
                   </div>
+                  
+                  {/* Email Verification Section */}
+                  <div className="space-y-3 pt-2">
+                    <label className="block text-xs font-bold tracking-wider uppercase text-blue-700">
+                      Vérification Email
+                    </label>
+                    <div className="relative group">
+                      <input
+                        ref={emailRef}
+                        type="email"
+                        placeholder="votre.email@castel-afrique.com"
+                        disabled={emailVerified || codeSent}
+                        className={`w-full px-4 py-3 rounded-xl bg-gray-50 border-2 ${
+                          emailVerified 
+                            ? 'border-green-500 bg-green-50' 
+                            : emailError 
+                            ? 'border-red-500 bg-red-50' 
+                            : 'border-gray-200'
+                        } text-gray-900 placeholder-gray-500 focus:border-purple-500 focus:ring-4 focus:ring-purple-500/20 transition-all duration-300 font-inter font-medium disabled:opacity-60 disabled:cursor-not-allowed`}
+                      />
+                      {emailVerified && (
+                        <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                          <svg className="w-6 h-6 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                          </svg>
+                        </div>
+                      )}
+                    </div>
+                    
+                    {emailError && (
+                      <motion.div
+                        initial={{ opacity: 0, y: -10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="flex items-center gap-2 px-4 py-2 rounded-xl bg-red-50 border-2 border-red-200 text-red-700 text-sm font-medium"
+                      >
+                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <span>{emailError}</span>
+                      </motion.div>
+                    )}
+                    
+                    {!emailVerified && !codeSent && (
+                      <button
+                        type="button"
+                        onClick={handleRequestCode}
+                        disabled={isRequestingCode}
+                        className="w-full px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                      >
+                        {isRequestingCode ? (
+                          <>
+                            <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                            <span>Envoi en cours...</span>
+                          </>
+                        ) : (
+                          <>
+                            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                            </svg>
+                            <span>Envoyer le code de vérification</span>
+                          </>
+                        )}
+                      </button>
+                    )}
+                    
+                    {codeSent && !emailVerified && (
+                      <div className="space-y-2">
+                        <div className="relative group">
+                          <input
+                            ref={codeRef}
+                            type="text"
+                            inputMode="numeric"
+                            maxLength={6}
+                            placeholder="Code à 6 chiffres"
+                            className="w-full px-4 py-3 rounded-xl bg-gray-50 border-2 border-gray-200 text-gray-900 placeholder-gray-500 focus:border-purple-500 focus:ring-4 focus:ring-purple-500/20 transition-all duration-300 font-inter font-medium text-center text-2xl tracking-widest"
+                            onChange={(e) => {
+                              // Only allow numbers
+                              const value = e.target.value.replace(/\D/g, '')
+                              e.target.value = value
+                            }}
+                          />
+                        </div>
+                        
+                        {codeSuccess && (
+                          <motion.div
+                            initial={{ opacity: 0, y: -10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-green-50 border-2 border-green-200 text-green-700 text-sm font-medium"
+                          >
+                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                            </svg>
+                            <span>{codeSuccess}</span>
+                          </motion.div>
+                        )}
+                        
+                        {codeError && (
+                          <motion.div
+                            initial={{ opacity: 0, y: -10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-red-50 border-2 border-red-200 text-red-700 text-sm font-medium"
+                          >
+                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                            <span>{codeError}</span>
+                          </motion.div>
+                        )}
+                        
+                        <div className="flex gap-2">
+                          <button
+                            type="button"
+                            onClick={handleVerifyCode}
+                            disabled={isVerifyingCode}
+                            className="flex-1 px-4 py-2.5 bg-purple-600 hover:bg-purple-700 text-white font-semibold rounded-xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                          >
+                            {isVerifyingCode ? (
+                              <>
+                                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                <span>Vérification...</span>
+                              </>
+                            ) : (
+                              <>
+                                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                                <span>Vérifier le code</span>
+                              </>
+                            )}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setCodeSent(false)
+                              setCodeError('')
+                              setCodeSuccess('')
+                              if (codeRef.current) codeRef.current.value = ''
+                            }}
+                            className="px-4 py-2.5 bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold rounded-xl transition-all duration-300"
+                          >
+                            Annuler
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                  
                   {showError && (
                     <motion.div
                       ref={errorMessageRef}
@@ -960,7 +1410,7 @@ export default function SurveyLanding() {
                       <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                       </svg>
-                      <span>Veuillez remplir tous les champs</span>
+                      <span>Veuillez remplir tous les champs et vérifier votre email</span>
                     </motion.div>
                   )}
                 </div>
@@ -968,17 +1418,24 @@ export default function SurveyLanding() {
                 <button
                   ref={buttonRef}
                   type="submit"
-                  className="group relative px-8 py-4 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-bold text-base rounded-full shadow-xl hover:shadow-2xl transition-all duration-300 hover:scale-105 overflow-hidden"
+                  disabled={!emailVerified}
+                  className={`group relative px-8 py-4 ${
+                    emailVerified 
+                      ? 'bg-gradient-to-r from-purple-600 to-pink-600 hover:shadow-2xl hover:scale-105' 
+                      : 'bg-gray-400 cursor-not-allowed'
+                  } text-white font-bold text-base rounded-full shadow-xl transition-all duration-300 overflow-hidden`}
                 >
                   <span className="relative z-10 flex items-center gap-2">
-                    {submitted ? '✓ MERCI!' : 'COMMENCER'}
-                    {!submitted && (
+                    {submitted ? '✓ MERCI!' : emailVerified ? 'COMMENCER' : 'Vérifiez votre email d\'abord'}
+                    {!submitted && emailVerified && (
                       <svg className="w-5 h-5 group-hover:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
                       </svg>
                     )}
                   </span>
-                  <div className="absolute inset-0 bg-gradient-to-r from-pink-600 to-purple-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                  {emailVerified && (
+                    <div className="absolute inset-0 bg-gradient-to-r from-pink-600 to-purple-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                  )}
                 </button>
               </form>
 
@@ -1026,10 +1483,18 @@ export default function SurveyLanding() {
           avatar={
             <div
               ref={nextPageAvatarRef}
-              className="opacity-0"
-              style={{ minHeight: '100%' }}
+              className="opacity-0 w-full h-full flex items-center justify-center"
+              onMouseEnter={() => setIsAvatarHovering(true)}
+              onMouseLeave={() => setIsAvatarHovering(false)}
             >
-              {memoizedQuestionAvatar}
+              <LottieCharacter
+                sectionId={currentSection.id}
+                questionId={currentQuestion.id}
+                totalQuestions={totalQuestions}
+                className="w-[1200px] h-[450px]"
+                isHovering={isAvatarHovering}
+                lastAnswerEmoji={lastAnswerEmoji}
+              />
             </div>
           }
         >
@@ -1042,7 +1507,21 @@ export default function SurveyLanding() {
           >
             <QuestionRenderer
               question={currentQuestion}
-              onAnswer={goToNextQuestion}
+              onAnswer={(answer) => {
+                // Capture emoji for Lottie reaction with smooth delay
+                if (currentQuestion.choices) {
+                  const selectedChoice = currentQuestion.choices.find(c => c.id === answer);
+                  if (selectedChoice?.emoji) {
+                    // Small delay before showing reaction (200ms for natural feel)
+                    setTimeout(() => {
+                      setLastAnswerEmoji(selectedChoice.emoji);
+                      // Clear emoji after animation completes (2.5s + 200ms delay)
+                      setTimeout(() => setLastAnswerEmoji(undefined), 2700);
+                    }, 200);
+                  }
+                }
+                goToNextQuestion(answer);
+              }}
             />
           </div>
         </QuestionPage>
