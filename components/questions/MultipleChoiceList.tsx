@@ -11,21 +11,28 @@ interface Choice {
   description?: string;
 }
 
-interface ModernChoiceListProps {
+interface MultipleChoiceListProps {
   choices: Choice[];
-  onSelect: (choiceId: string) => void;
-  selectedId?: string | null;
+  onSelect: (choiceIds: string[]) => void;
+  selectedIds?: string[];
   accentColor?: string;
   isFirstQuestion?: boolean;
 }
 
-export default function ModernChoiceList({
+export default function MultipleChoiceList({
   choices,
   onSelect,
-  selectedId,
+  selectedIds = [],
   accentColor,
   isFirstQuestion = false,
-}: ModernChoiceListProps) {
+}: MultipleChoiceListProps) {
+  const handleToggle = (choiceId: string) => {
+    const newSelectedIds = selectedIds.includes(choiceId)
+      ? selectedIds.filter(id => id !== choiceId)
+      : [...selectedIds, choiceId];
+    onSelect(newSelectedIds);
+  };
+
   // Stack vertically for 3 or fewer choices
   const isVerticalLayout = choices.length <= 3;
   
@@ -52,8 +59,8 @@ export default function ModernChoiceList({
             key={choice.id}
             id={choice.id}
             label={choice.label}
-            isSelected={selectedId === choice.id}
-            onClick={() => onSelect(choice.id)}
+            isSelected={selectedIds.includes(choice.id)}
+            onClick={() => handleToggle(choice.id)}
             index={index}
             accentColor={accentColor}
             icon={(choice as any).icon}
@@ -67,5 +74,7 @@ export default function ModernChoiceList({
     </div>
   );
 }
+
+
 
 

@@ -3,34 +3,74 @@
  * 
  * Protects API endpoints from abuse by limiting requests per IP address.
  * 
- * Options:
- * 1. In-Memory (Simple, no dependencies) - Current implementation
- * 2. Redis/Upstash (Production-ready, distributed)
+ * Uses Upstash Redis for distributed rate limiting in production.
+ * Falls back to in-memory store if Upstash is not configured (development).
  */
+
+import { Ratelimit } from "@upstash/ratelimit";
+import { Redis } from "@upstash/redis";
 
 interface RateLimitConfig {
   windowMs: number; // Time window in milliseconds
   maxRequests: number; // Maximum requests per window
 }
 
+interface RateLimitResult {
+  success: boolean;
+  remaining: number;
+  resetTime: number;
+}
+
+// In-memory store (fallback for development when Upstash is not configured)
 interface RateLimitEntry {
   count: number;
   resetTime: number;
 }
 
-// In-memory store (for single-instance deployments)
-// For production with multiple instances, use Redis/Upstash
-const rateLimitStore = new Map<string, RateLimitEntry>();
+const inMemoryStore = new Map<string, RateLimitEntry>();
 
-// Cleanup old entries every 5 minutes
-setInterval(() => {
-  const now = Date.now();
-  for (const [key, entry] of rateLimitStore.entries()) {
-    if (entry.resetTime < now) {
-      rateLimitStore.delete(key);
+// Cleanup old entries every 5 minutes (only for in-memory fallback)
+if (typeof setInterval !== 'undefined') {
+  setInterval(() => {
+    const now = Date.now();
+    for (const [key, entry] of inMemoryStore.entries()) {
+      if (entry.resetTime < now) {
+        inMemoryStore.delete(key);
+      }
+    }
+  }, 5 * 60 * 1000);
+}
+
+/**
+ * Initialize Upstash Redis client if credentials are available
+ */
+let redisClient: Redis | null = null;
+let useUpstash = false;
+
+try {
+  const upstashUrl = process.env.UPSTASH_REDIS_REST_URL;
+  const upstashToken = process.env.UPSTASH_REDIS_REST_TOKEN;
+
+  if (upstashUrl && upstashToken) {
+    redisClient = new Redis({
+      url: upstashUrl,
+      token: upstashToken,
+    });
+    useUpstash = true;
+    if (process.env.NODE_ENV !== 'production') {
+      console.log('[ratelimit] Using Upstash Redis for distributed rate limiting');
+    }
+  } else {
+    if (process.env.NODE_ENV !== 'production') {
+      console.log('[ratelimit] Upstash not configured, using in-memory rate limiting (dev mode)');
     }
   }
-}, 5 * 60 * 1000);
+} catch (error) {
+  if (process.env.NODE_ENV !== 'production') {
+    console.warn('[ratelimit] Failed to initialize Upstash Redis, falling back to in-memory:', error);
+  }
+  useUpstash = false;
+}
 
 /**
  * Rate limit configuration per endpoint
@@ -54,22 +94,73 @@ export const rateLimitConfigs = {
 } as const;
 
 /**
- * Check if a request should be rate limited
- * 
- * @param identifier - IP address or user identifier
- * @param config - Rate limit configuration
- * @returns Object with success status and remaining requests
+ * Create Upstash Ratelimit instance for a specific configuration
  */
-export function checkRateLimit(
+function createUpstashRatelimit(config: RateLimitConfig): Ratelimit | null {
+  if (!redisClient) {
+    return null;
+  }
+
+  // Convert windowMs to seconds for Upstash
+  const windowSeconds = Math.ceil(config.windowMs / 1000);
+
+  return new Ratelimit({
+    redis: redisClient,
+    limiter: Ratelimit.slidingWindow(config.maxRequests, `${windowSeconds} s`),
+    analytics: true,
+    prefix: '@quiz-forms/ratelimit',
+  });
+}
+
+/**
+ * Check rate limit using Upstash Redis
+ */
+async function checkRateLimitUpstash(
   identifier: string,
-  config: RateLimitConfig = rateLimitConfigs.default
-): { success: boolean; remaining: number; resetTime: number } {
+  config: RateLimitConfig
+): Promise<RateLimitResult> {
+  const ratelimit = createUpstashRatelimit(config);
+  
+  if (!ratelimit) {
+    // Fallback to in-memory if Upstash is not available
+    return checkRateLimitInMemory(identifier, config);
+  }
+
+  try {
+    const result = await ratelimit.limit(identifier);
+    const now = Date.now();
+    const windowMs = config.windowMs;
+    
+    // Calculate reset time (approximate, as Upstash uses sliding window)
+    const resetTime = now + windowMs;
+
+    return {
+      success: result.success,
+      remaining: result.remaining,
+      resetTime: resetTime,
+    };
+  } catch (error) {
+    // If Upstash fails, fallback to in-memory
+    if (process.env.NODE_ENV !== 'production') {
+      console.warn('[ratelimit] Upstash error, falling back to in-memory:', error);
+    }
+    return checkRateLimitInMemory(identifier, config);
+  }
+}
+
+/**
+ * Check rate limit using in-memory store (fallback)
+ */
+function checkRateLimitInMemory(
+  identifier: string,
+  config: RateLimitConfig
+): RateLimitResult {
   const now = Date.now();
-  const entry = rateLimitStore.get(identifier);
+  const entry = inMemoryStore.get(identifier);
 
   // No entry or expired - create new entry
   if (!entry || entry.resetTime < now) {
-    rateLimitStore.set(identifier, {
+    inMemoryStore.set(identifier, {
       count: 1,
       resetTime: now + config.windowMs,
     });
@@ -99,6 +190,24 @@ export function checkRateLimit(
 }
 
 /**
+ * Check if a request should be rate limited
+ * 
+ * @param identifier - IP address or user identifier
+ * @param config - Rate limit configuration
+ * @returns Object with success status and remaining requests
+ */
+export async function checkRateLimit(
+  identifier: string,
+  config: RateLimitConfig = rateLimitConfigs.default
+): Promise<RateLimitResult> {
+  if (useUpstash && redisClient) {
+    return checkRateLimitUpstash(identifier, config);
+  } else {
+    return checkRateLimitInMemory(identifier, config);
+  }
+}
+
+/**
  * Get client IP address from request
  */
 export function getClientIP(request: Request): string {
@@ -122,8 +231,8 @@ export function getClientIP(request: Request): string {
  * 
  * Usage in API routes:
  * ```typescript
- * const ip = getClientIP(request);
- * const { success, remaining, resetTime } = checkRateLimit(ip, rateLimitConfigs.submit);
+ * const ip = rateLimit.getIP(request);
+ * const { success, remaining, resetTime } = await rateLimit.check(ip, rateLimitConfigs.submit);
  * 
  * if (!success) {
  *   return NextResponse.json(
@@ -145,4 +254,3 @@ export const rateLimit = {
   getIP: getClientIP,
   configs: rateLimitConfigs,
 };
-

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { rateLimit, rateLimitConfigs } from '@/lib/ratelimit';
 import { validateSubmitRequest, formatValidationErrors } from '@/lib/validation';
 import { submissionTracker } from '@/lib/submissionTracker';
+import { handleApiError, createValidationErrorResponse, createExternalServiceErrorResponse } from '@/lib/errorHandler';
 import { sendConfirmationEmail } from '@/lib/mailer';
 
 /**
@@ -36,7 +37,7 @@ export async function POST(request: NextRequest) {
   try {
     // Rate limiting - Prevent spam submissions
     const ip = rateLimit.getIP(request);
-    const { success, remaining, resetTime } = rateLimit.check(ip, rateLimitConfigs.submit);
+    const { success, remaining, resetTime } = await rateLimit.check(ip, rateLimitConfigs.submit);
     
     if (!success) {
       const retryAfter = Math.ceil((resetTime - Date.now()) / 1000);
@@ -95,14 +96,7 @@ export async function POST(request: NextRequest) {
         ? formatValidationErrors(validation.errors)
         : ['Données invalides'];
       
-      return NextResponse.json(
-        { 
-          error: 'Validation failed',
-          message: 'Les données soumises sont invalides',
-          details: errorMessages
-        },
-        { status: 400 }
-      );
+      return createValidationErrorResponse(errorMessages, 'POST /api/submit');
     }
 
     const { nom, prenom, email, answers } = validation.data;
@@ -141,7 +135,9 @@ export async function POST(request: NextRequest) {
       })),
     };
 
-    console.log('Submitting to Power Automate:', JSON.stringify(payload, null, 2));
+    if (process.env.NODE_ENV !== 'production') {
+      console.log('Submitting to Power Automate:', JSON.stringify(payload, null, 2));
+    }
 
     // Call Power Automate flow with API key for authentication
     const response = await fetch(powerAutomateUrl, {
@@ -155,10 +151,10 @@ export async function POST(request: NextRequest) {
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('Power Automate error:', errorText);
-      return NextResponse.json(
-        { error: 'Failed to submit data to Power Automate', details: errorText },
-        { status: response.status }
+      return createExternalServiceErrorResponse(
+        'Power Automate',
+        new Error(errorText || 'Power Automate request failed'),
+        'POST /api/submit'
       );
     }
 
@@ -169,7 +165,9 @@ export async function POST(request: NextRequest) {
 
     // Send confirmation email asynchronously (don't wait for it)
     sendConfirmationEmail(email, nom, prenom).catch((error) => {
-      console.error('Failed to send confirmation email:', error);
+      if (process.env.NODE_ENV !== 'production') {
+        console.error('Failed to send confirmation email:', error);
+      }
       // Email sending failed, but submission was successful
       // Don't fail the request if email fails
     });
@@ -189,11 +187,7 @@ export async function POST(request: NextRequest) {
       }
     );
   } catch (error) {
-    console.error('Error submitting data:', error);
-    return NextResponse.json(
-      { error: 'Internal server error', details: error instanceof Error ? error.message : 'Unknown error' },
-      { status: 500 }
-    );
+    return handleApiError(error, 'POST /api/submit');
   }
 }
 

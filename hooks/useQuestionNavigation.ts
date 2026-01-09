@@ -10,12 +10,47 @@ const STORAGE_KEY = 'survey_progress';
 const STORAGE_ANSWERS_KEY = 'survey_answers';
 const STORAGE_INDEX_KEY = 'survey_current_index';
 const STORAGE_COMPLETED_KEY = 'survey_completed';
+const STORAGE_QUESTIONS_VERSION_KEY = 'survey_questions_version';
+
+// Generate a version hash based on questions structure
+function getQuestionsVersion(): string {
+  // Create a simple hash based on number of questions and their IDs
+  const questionIds = questions.map(q => q.id).join(',');
+  const questionTypes = questions.map(q => q.type).join(',');
+  const totalQuestions = questions.length;
+  // Simple hash: combine all info
+  return `${totalQuestions}-${questionIds.substring(0, 50)}-${questionTypes.substring(0, 30)}`;
+}
+
+// Check if questions have changed and clear cache if needed
+function checkQuestionsVersion() {
+  if (typeof window === 'undefined') return;
+  
+  try {
+    const currentVersion = getQuestionsVersion();
+    const savedVersion = localStorage.getItem(STORAGE_QUESTIONS_VERSION_KEY);
+    
+    // If version changed or doesn't exist, clear all survey data
+    if (savedVersion !== currentVersion) {
+      console.log('Questions have changed, clearing survey cache...');
+      clearSavedProgress();
+      localStorage.setItem(STORAGE_QUESTIONS_VERSION_KEY, currentVersion);
+    }
+  } catch (error) {
+    if (process.env.NODE_ENV !== 'production') {
+      console.error('Error checking questions version:', error);
+    }
+  }
+}
 
 // Load saved progress from localStorage
 function loadSavedProgress() {
   if (typeof window === 'undefined') {
     return { answers: [], currentIndex: 0, isCompleted: false };
   }
+
+  // Check if questions have changed first
+  checkQuestionsVersion();
 
   // Don't restore if already submitted
   const isSubmitted = localStorage.getItem('survey_submitted') === 'true';
@@ -34,7 +69,9 @@ function loadSavedProgress() {
       isCompleted: savedCompleted === 'true',
     };
   } catch (error) {
-    console.error('Error loading saved progress:', error);
+    if (process.env.NODE_ENV !== 'production') {
+      console.error('Error loading saved progress:', error);
+    }
     return { answers: [], currentIndex: 0, isCompleted: false };
   }
 }
@@ -48,7 +85,9 @@ function saveProgress(answers: QuestionAnswer[], currentIndex: number, isComplet
     localStorage.setItem(STORAGE_INDEX_KEY, currentIndex.toString());
     localStorage.setItem(STORAGE_COMPLETED_KEY, isCompleted.toString());
   } catch (error) {
-    console.error('Error saving progress:', error);
+    if (process.env.NODE_ENV !== 'production') {
+      console.error('Error saving progress:', error);
+    }
   }
 }
 
@@ -60,8 +99,11 @@ function clearSavedProgress() {
     localStorage.removeItem(STORAGE_ANSWERS_KEY);
     localStorage.removeItem(STORAGE_INDEX_KEY);
     localStorage.removeItem(STORAGE_COMPLETED_KEY);
+    // Note: We keep STORAGE_QUESTIONS_VERSION_KEY to track version
   } catch (error) {
-    console.error('Error clearing saved progress:', error);
+    if (process.env.NODE_ENV !== 'production') {
+      console.error('Error clearing saved progress:', error);
+    }
   }
 }
 
@@ -114,7 +156,9 @@ export function useQuestionNavigation() {
         
         // If this is the last question, mark as completed
         if (currentQuestionIndex === questions.length - 1) {
-          console.log("Survey completed!", newAnswers);
+          if (process.env.NODE_ENV !== 'production') {
+            console.log("Survey completed!", newAnswers);
+          }
           setTimeout(() => setIsCompleted(true), 100);
         }
         

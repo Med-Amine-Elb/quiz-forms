@@ -34,36 +34,88 @@ const QuestionPage = forwardRef<HTMLDivElement, QuestionPageProps>(({
   const previousSectionRef = useRef<string | null>(null);
   const [showSectionIntro, setShowSectionIntro] = useState(false);
   const [showWelcome, setShowWelcome] = useState(false);
+  const [welcomeCompleted, setWelcomeCompleted] = useState(false);
+  const [sectionCompleted, setSectionCompleted] = useState(false);
   const isFirstQuestion = questionNumber === 1;
+  const isFirstQuestionOfSection = questionNumber === section.startQuestion;
 
-  // Show welcome message for first question
+  // Initialize states based on question type
   useEffect(() => {
     if (isFirstQuestion) {
+      // First question: show welcome first
       setShowWelcome(true);
+      setWelcomeCompleted(false);
+      setSectionCompleted(false);
+      setShowSectionIntro(false);
+    } else if (isFirstQuestionOfSection) {
+      // First question of a new section (but not question 1): show section intro
+      setWelcomeCompleted(true);
+      setShowWelcome(false);
+      setSectionCompleted(false);
+      // Section intro will be shown by the other useEffect
+    } else {
+      // Regular question: everything is already completed
+      setWelcomeCompleted(true);
+      setShowWelcome(false);
+      setSectionCompleted(true);
+      setShowSectionIntro(false);
     }
-  }, [isFirstQuestion]);
+  }, [isFirstQuestion, isFirstQuestionOfSection]);
 
-  // Show section intro on first question of new section
+  // Handle welcome completion - then show section intro
+  const handleWelcomeComplete = () => {
+    setShowWelcome(false);
+    setWelcomeCompleted(true);
+    // After welcome fade out completes (0.5s), show section intro for first question
+    // Add small overlap for smooth transition
+    if (isFirstQuestion) {
+      setTimeout(() => {
+        setShowSectionIntro(true);
+      }, 300); // Smooth overlap transition
+    }
+  };
+
+  // Handle section intro completion
+  const handleSectionComplete = () => {
+    setShowSectionIntro(false);
+    setSectionCompleted(true);
+    // Update previous section ref when section is completed
+    previousSectionRef.current = section.id;
+  };
+
+  // Show section intro on first question of new section (but only after welcome is done)
   useEffect(() => {
-    const isFirstQuestionOfSection = questionNumber === section.startQuestion;
     const isNewSection = previousSectionRef.current !== section.id;
     
-    // Only show section intro on the FIRST question of a NEW section
-    if (isNewSection && isFirstQuestionOfSection) {
+    // For first question, wait for welcome to complete
+    if (isFirstQuestion && !welcomeCompleted) {
+      return;
+    }
+    
+    // For first question, wait for welcome to complete before showing section
+    // Section will be shown by handleWelcomeComplete, so we don't need to do anything here
+    if (isFirstQuestion && welcomeCompleted && !sectionCompleted && isFirstQuestionOfSection) {
+      return;
+    }
+    
+    // Only show section intro on the FIRST question of a NEW section (for non-first questions)
+    if (isNewSection && isFirstQuestionOfSection && !isFirstQuestion) {
       setShowSectionIntro(true);
-      previousSectionRef.current = section.id;
+      setSectionCompleted(false);
     } else {
       // Hide section intro if not on first question of section
-      if (!isFirstQuestionOfSection) {
+      if (!isFirstQuestionOfSection && !isFirstQuestion) {
         setShowSectionIntro(false);
+        setSectionCompleted(true);
       }
       
       // Update previous section ref even if not showing intro
-      if (isNewSection) {
+      if (isNewSection && !isFirstQuestionOfSection) {
         previousSectionRef.current = section.id;
+        setSectionCompleted(true);
       }
     }
-  }, [section.id, questionNumber, section.startQuestion]);
+  }, [section.id, questionNumber, section.startQuestion, isFirstQuestion, isFirstQuestionOfSection, welcomeCompleted, sectionCompleted]);
 
   return (
       <div
@@ -71,63 +123,79 @@ const QuestionPage = forwardRef<HTMLDivElement, QuestionPageProps>(({
         className="absolute inset-0 w-full h-full flex flex-col overflow-hidden bg-transparent"
         style={{
           zIndex: 2,
-          willChange: 'transform',
+          willChange: 'transform, opacity',
           overflowX: 'hidden',
           backfaceVisibility: 'hidden',
           WebkitBackfaceVisibility: 'hidden',
           backgroundColor: 'transparent',
+          transform: 'translateZ(0)', // Force GPU acceleration
         }}
       >
       {/* Welcome Message for First Question */}
       {showWelcome && isFirstQuestion && (
-        <WelcomeMessage onComplete={() => setShowWelcome(false)} />
+        <WelcomeMessage onComplete={handleWelcomeComplete} />
       )}
 
       {/* Section Introduction Card */}
       {showSectionIntro && (
         <SectionIntro
           section={section}
-          onClose={() => setShowSectionIntro(false)}
+          onClose={handleSectionComplete}
         />
       )}
 
-      {/* Logo - Top Left - Adjusted for fixed progress bar */}
-      <div className="absolute top-24 left-6 z-10">
-        <img
-          src="/societe-des-boissons-du-maroc--600-removebg-preview.png"
-          alt="SBM Logo"
-          className="h-16 w-auto object-contain"
-        />
-      </div>
+      {/* Logo - Top Left - Only show when welcome and section are completed */}
+      {!showWelcome && !showSectionIntro && welcomeCompleted && sectionCompleted && (
+        <motion.div 
+          className="absolute top-24 left-6 z-10"
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{
+            duration: 0.6,
+            delay: 0.2,
+            ease: [0.16, 1, 0.3, 1],
+          }}
+        >
+          <img
+            src="/societe-des-boissons-du-maroc--600-removebg-preview.png"
+            alt="SBM Logo"
+            className="h-16 w-auto object-contain"
+          />
+        </motion.div>
+      )}
 
-      {/* Page Content - Adjusted for fixed progress bar - Hidden when section intro is showing */}
+      {/* Page Content - Always render but hide when welcome or section is showing */}
       <motion.div 
         className="w-full h-full relative flex flex-col lg:flex-row items-stretch px-4 lg:px-8 overflow-hidden pt-24 z-10 bg-transparent"
         initial={false}
         animate={{
-          opacity: showSectionIntro ? 0 : 1,
+          opacity: (!showWelcome && !showSectionIntro && welcomeCompleted && sectionCompleted) ? 1 : 0,
+          y: (!showWelcome && !showSectionIntro && welcomeCompleted && sectionCompleted) ? 0 : 10,
+          pointerEvents: (!showWelcome && !showSectionIntro && welcomeCompleted && sectionCompleted) ? 'auto' : 'none',
         }}
         transition={{
-          duration: 0.5,
-          ease: 'easeOut',
+          duration: 0.6,
+          ease: [0.16, 1, 0.3, 1],
         }}
         style={{
-          pointerEvents: showSectionIntro ? 'none' : 'auto',
           backgroundColor: 'transparent',
+          visibility: (!showWelcome && !showSectionIntro && welcomeCompleted && sectionCompleted) ? 'visible' : 'hidden',
+          willChange: 'transform, opacity',
         }}
       >
         {/* Left Side - Content */}
-        <div className={cn(
-          "w-full lg:w-2/3 flex flex-col items-center lg:items-start justify-start px-2 lg:px-4 py-4 lg:py-6 relative z-20",
-          // Only allow scroll for specific questions that need it, not question 7
-          questionNumber === 7 ? "overflow-hidden" : "overflow-y-auto overflow-x-hidden"
-        )}>
-          {/* Animated Question Card - Conditional sizing based on question number */}
-          <div ref={questionNumberRef} className={cn(
-            "w-full mt-6 mb-6 lg:mt-16 lg:mb-8",
-            // Only apply max-w-4xl to first question, not all questions
-            isFirstQuestion && "max-w-4xl"
-          )}>
+        <div 
+          className={cn(
+            "w-full lg:w-2/3 flex flex-col items-center lg:items-start justify-start px-2 lg:px-4 py-4 lg:py-6 relative z-20",
+            // Only allow scroll for specific questions that need it, not question 7
+            questionNumber === 7 ? "overflow-hidden" : "overflow-y-auto overflow-x-hidden"
+          )}
+          style={{
+            willChange: 'transform',
+          }}
+        >
+          {/* Animated Question Card - Consistent sizing for all questions */}
+          <div ref={questionNumberRef} className="w-full max-w-4xl mx-auto mt-6 mb-6 lg:mt-16 lg:mb-8">
             <AnimatedQuestionCard
               key={questionNumber}
               questionNumber={questionNumber}
@@ -137,15 +205,20 @@ const QuestionPage = forwardRef<HTMLDivElement, QuestionPageProps>(({
             />
           </div>
 
-          {/* Question Content - Grouped with Breathing Room */}
-          <div ref={questionTextRef} className="w-full">
+          {/* Question Content - Grouped with Breathing Room - Centered to match question card */}
+          <div ref={questionTextRef} className="w-full max-w-4xl mx-auto">
             {children}
           </div>
         </div>
 
         {/* Right Side - Lottie/3D Character */}
         {avatar && (
-          <div className="w-full lg:w-1/3 hidden lg:flex items-center justify-center z-0 pointer-events-none">
+          <div 
+            className="w-full lg:w-1/3 hidden lg:flex items-center justify-center z-0 pointer-events-none"
+            style={{
+              willChange: 'transform, opacity',
+            }}
+          >
             <div className="w-full h-full max-w-[1400px] flex items-center justify-center">
               {avatar}
             </div>

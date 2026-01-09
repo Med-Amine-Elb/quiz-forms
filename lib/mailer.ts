@@ -32,10 +32,29 @@ export async function sendVerificationEmail(to: string, code: string) {
   const subject = 'Votre code de vérification - Enquête Castel Afrique';
   
   // Debug: Log the from address being used
-  console.log('[sendVerificationEmail] Using FROM address:', from);
+  if (process.env.NODE_ENV !== 'production') {
+    console.log('[sendVerificationEmail] Using FROM address:', from);
+  }
   
-  // Get HTML and text templates
-  const { html, text } = getVerificationEmailTemplate(code);
+  // Get base URL for logo - same logic as confirmation email
+  let baseUrl = process.env.NEXT_PUBLIC_BASE_URL;
+  
+  if (!baseUrl) {
+    if (process.env.VERCEL_URL) {
+      baseUrl = `https://${process.env.VERCEL_URL}`;
+    } else if (process.env.NODE_ENV === 'development') {
+      baseUrl = 'http://localhost:3000';
+    } else {
+      baseUrl = 'https://your-domain.com';
+    }
+  }
+  
+  if (process.env.NODE_ENV !== 'production') {
+    console.log('[sendVerificationEmail] Using baseUrl for logo:', baseUrl);
+  }
+  
+  // Get HTML and text templates with baseUrl for logo
+  const { html, text } = getVerificationEmailTemplate(code, baseUrl);
 
   try {
     await transporter.sendMail({
@@ -70,10 +89,31 @@ export async function sendConfirmationEmail(to: string, nom: string, prenom: str
   const subject = 'Confirmation de soumission - Enquête Castel Afrique';
   
   // Debug: Log the from address being used
-  console.log('[sendConfirmationEmail] Using FROM address:', from);
+  if (process.env.NODE_ENV !== 'production') {
+    console.log('[sendConfirmationEmail] Using FROM address:', from);
+  }
+  
+  // Get base URL for logo - prioritize NEXT_PUBLIC_BASE_URL, then VERCEL_URL, then localhost for dev
+  let baseUrl = process.env.NEXT_PUBLIC_BASE_URL;
+  
+  if (!baseUrl) {
+    if (process.env.VERCEL_URL) {
+      baseUrl = `https://${process.env.VERCEL_URL}`;
+    } else if (process.env.NODE_ENV === 'development') {
+      // For local development, use localhost
+      baseUrl = 'http://localhost:3000';
+    } else {
+      // Fallback - user should set NEXT_PUBLIC_BASE_URL in production
+      baseUrl = 'https://your-domain.com';
+    }
+  }
+  
+  if (process.env.NODE_ENV !== 'production') {
+    console.log('[sendConfirmationEmail] Using baseUrl for logo:', baseUrl);
+  }
   
   // Get HTML and text templates
-  const { html, text } = getConfirmationEmailTemplate(nom, prenom);
+  const { html, text } = getConfirmationEmailTemplate(nom, prenom, baseUrl);
 
   try {
     await transporter.sendMail({

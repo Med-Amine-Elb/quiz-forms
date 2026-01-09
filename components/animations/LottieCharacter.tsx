@@ -443,7 +443,9 @@ export default function LottieCharacter({
       
       // Small delay before switching (150ms for natural reaction feel)
       setTimeout(() => {
-        console.log(`🎭 Animation switching to: ${reactionType} (emoji: ${lastAnswerEmoji})`);
+        if (process.env.NODE_ENV !== 'production') {
+          console.log(`🎭 Animation switching to: ${reactionType} (emoji: ${lastAnswerEmoji})`);
+        }
         setCurrentState(reactionType);
         
         if (reactionTimeoutRef.current) {
@@ -452,7 +454,9 @@ export default function LottieCharacter({
         
         // Return to idle after animation duration
         reactionTimeoutRef.current = setTimeout(() => {
-          console.log('🎭 Animation returning to: idle');
+          if (process.env.NODE_ENV !== 'production') {
+            console.log('🎭 Animation returning to: idle');
+          }
           setCurrentState('idle');
         }, reactDuration);
       }, 150);
@@ -465,9 +469,11 @@ export default function LottieCharacter({
     };
   }, [lastAnswerEmoji, autoReact, reactDuration, currentState]);
   
-  // Debug: Log state changes
+  // Debug: Log state changes (only in development)
   useEffect(() => {
-    console.log(`🎭 Current animation state: ${currentState}`);
+    if (process.env.NODE_ENV !== 'production') {
+      console.log(`🎭 Current animation state: ${currentState}`);
+    }
   }, [currentState]);
 
   // Note: DotLottieReact doesn't support speed control via ref, but hover effects are handled via CSS

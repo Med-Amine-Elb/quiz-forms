@@ -11,34 +11,36 @@ export default function WelcomeMessage({ onComplete }: WelcomeMessageProps) {
   const [isVisible, setIsVisible] = useState(true);
 
   useEffect(() => {
+    // Display for 2 seconds, then fade out
     const timer = setTimeout(() => {
       setIsVisible(false);
-      setTimeout(onComplete, 600);
+      // Call onComplete after fade out animation completes (0.5s)
+      setTimeout(onComplete, 500);
     }, 2000);
 
     return () => clearTimeout(timer);
   }, [onComplete]);
 
   return (
-    <AnimatePresence>
+    <AnimatePresence mode="wait">
       {isVisible && (
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          transition={{ duration: 0.3 }}
+          transition={{ 
+            duration: 0.5,
+            ease: [0.16, 1, 0.3, 1]
+          }}
           className="fixed inset-0 flex items-center justify-center z-[101] pointer-events-none"
         >
           <motion.div
-            initial={{ opacity: 0, scale: 0.8, y: 50 }}
+            initial={{ opacity: 0, scale: 0.9, y: 30 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.9, y: -30 }}
+            exit={{ opacity: 0, scale: 0.95, y: -20 }}
             transition={{
-              duration: 0.8,
-              ease: [0.25, 0.4, 0.25, 1],
-              type: "spring",
-              stiffness: 100,
-              damping: 15,
+              duration: 0.6,
+              ease: [0.16, 1, 0.3, 1],
             }}
             className="relative rounded-3xl p-12 shadow-2xl backdrop-blur-2xl border-2 pointer-events-auto"
             style={{

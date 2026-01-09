@@ -10,6 +10,8 @@ import ProgressBar from '@/components/questions/ProgressBar'
 import { useQuestionNavigation } from '@/hooks/useQuestionNavigation'
 import AccessibilityMenu from '@/components/accessibility/AccessibilityMenu'
 import SkipToContent from '@/components/accessibility/SkipToContent'
+import SubmissionConfirmationModal from '@/components/questions/SubmissionConfirmationModal'
+import { useToast, toastSuccess, toastError, toastInfo } from '@/hooks/useToast'
 import { questions } from '@/data/questions'
 import { preloadQuestionType } from '@/lib/preloadQuestionComponents'
 import { getSectionForQuestion } from '@/lib/questionSections'
@@ -101,6 +103,9 @@ export default function SurveyLanding() {
   const [emailError, setEmailError] = useState('')
   const [codeError, setCodeError] = useState('')
   const [codeSuccess, setCodeSuccess] = useState('')
+  const [showResendCode, setShowResendCode] = useState(false)
+  const [showConfirmationModal, setShowConfirmationModal] = useState(false)
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
   // Load saved form data on mount
   useEffect(() => {
@@ -208,105 +213,133 @@ export default function SurveyLanding() {
   // Track if submission has been done to prevent duplicates
   const hasSubmittedRef = useRef(false);
   
+  // Submit answers function - reusable
+  const submitAnswers = useCallback(async () => {
+    setIsSubmitting(true);
+    try {
+      // Enrich answers with question text and convert choice IDs to readable text
+      const enrichedAnswers = answers.map(ans => {
+        const question = questions.find(q => q.id === ans.questionId);
+        
+        // Convert answer to readable text
+        let readableAnswer = ans.answer;
+        
+        // For choice questions, convert ID to label
+        if (question?.type === 'choice' && question.choices && typeof ans.answer === 'string') {
+          const selectedChoice = question.choices.find(c => c.id === ans.answer);
+          if (selectedChoice) {
+            readableAnswer = selectedChoice.label;
+          }
+        }
+        
+        // For multiple choice questions (array of IDs)
+        if (question?.type === 'multiple' && question.choices && Array.isArray(ans.answer)) {
+          readableAnswer = ans.answer.map(answerId => {
+            const choice = question.choices?.find(c => c.id === answerId);
+            return choice?.label || answerId;
+          }).join(', ');
+        }
+        
+        // For satisfaction questions (convert number to text)
+        if (question?.type === 'satisfaction' && typeof ans.answer === 'string') {
+          // The answer is already a satisfaction level ID, keep it or convert
+          readableAnswer = ans.answer;
+        }
+        
+        return {
+          questionId: ans.questionId,
+          questionText: question?.question || `Question ${ans.questionId}`,
+          answer: String(readableAnswer),
+        };
+      });
+
+      // Get browser fingerprint for duplicate prevention
+      const { getOrCreateFingerprint } = await import('@/lib/browserFingerprint');
+      const fingerprint = getOrCreateFingerprint();
+
+      toastInfo('Envoi en cours...', 'Votre formulaire est en cours de soumission.');
+
+      const response = await fetch('/api/submit', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-browser-fingerprint': fingerprint,
+        },
+        body: JSON.stringify({
+          nom: nomRef.current?.value.trim() || '',
+          prenom: prenomRef.current?.value.trim() || '',
+          email: emailRef.current?.value.trim() || '',
+          answers: enrichedAnswers,
+        }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        if (process.env.NODE_ENV !== 'production') {
+          console.error('Failed to submit answers:', error);
+        }
+        
+        // Handle duplicate submission error
+        if (response.status === 409 && error.code === 'DUPLICATE_SUBMISSION') {
+          const errorMsg = 'Vous avez déjà soumis ce formulaire. Merci de votre participation!';
+          toastError('Déjà soumis', errorMsg);
+          hasSubmittedRef.current = true; // Prevent retry
+        } else {
+          const errorMsg = error.error || 'Erreur lors de la soumission. Veuillez réessayer.';
+          toastError('Erreur de soumission', errorMsg);
+        }
+        setIsSubmitting(false);
+        return;
+      }
+
+      const result = await response.json();
+      if (process.env.NODE_ENV !== 'production') {
+        console.log('Answers submitted successfully:', result);
+      }
+      
+      toastSuccess('Formulaire soumis!', 'Merci pour votre participation. Vos réponses ont été enregistrées avec succès.');
+      
+      // Store submission in localStorage as backup
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('survey_submitted', 'true');
+        localStorage.setItem('survey_submitted_at', Date.now().toString());
+        
+        // Clear survey progress after successful submission
+        localStorage.removeItem('survey_answers');
+        localStorage.removeItem('survey_current_index');
+        localStorage.removeItem('survey_completed');
+        localStorage.removeItem('survey_email');
+        localStorage.removeItem('survey_nom');
+        localStorage.removeItem('survey_prenom');
+        localStorage.removeItem('survey_email_verified');
+      }
+      
+      setIsSubmitting(false);
+      setSubmitted(true);
+      setShowConfirmationModal(false);
+    } catch (error) {
+      if (process.env.NODE_ENV !== 'production') {
+        console.error('Error submitting answers:', error);
+      }
+      toastError('Erreur', 'Une erreur est survenue lors de la soumission. Veuillez réessayer.');
+      setIsSubmitting(false);
+    }
+  }, [answers]);
+
   // Submit answers to Power Automate when form is completed
   useEffect(() => {
     if (isCompleted && answers.length > 0 && nomRef.current?.value && prenomRef.current?.value && !hasSubmittedRef.current) {
       hasSubmittedRef.current = true; // Mark as submitted immediately
       
-      const submitAnswers = async () => {
-        try {
-          // Enrich answers with question text and convert choice IDs to readable text
-          const enrichedAnswers = answers.map(ans => {
-            const question = questions.find(q => q.id === ans.questionId);
-            
-            // Convert answer to readable text
-            let readableAnswer = ans.answer;
-            
-            // For choice questions, convert ID to label
-            if (question?.type === 'choice' && question.choices && typeof ans.answer === 'string') {
-              const selectedChoice = question.choices.find(c => c.id === ans.answer);
-              if (selectedChoice) {
-                readableAnswer = selectedChoice.label;
-              }
-            }
-            
-            // For multiple choice questions (array of IDs)
-            if (question?.type === 'multiple' && question.choices && Array.isArray(ans.answer)) {
-              readableAnswer = ans.answer.map(answerId => {
-                const choice = question.choices?.find(c => c.id === answerId);
-                return choice?.label || answerId;
-              }).join(', ');
-            }
-            
-            // For satisfaction questions (convert number to text)
-            if (question?.type === 'satisfaction' && typeof ans.answer === 'string') {
-              // The answer is already a satisfaction level ID, keep it or convert
-              readableAnswer = ans.answer;
-            }
-            
-            return {
-              questionId: ans.questionId,
-              questionText: question?.question || `Question ${ans.questionId}`,
-              answer: String(readableAnswer),
-            };
-          });
-
-          // Get browser fingerprint for duplicate prevention
-          const { getOrCreateFingerprint } = await import('@/lib/browserFingerprint');
-          const fingerprint = getOrCreateFingerprint();
-
-          const response = await fetch('/api/submit', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'x-browser-fingerprint': fingerprint,
-            },
-            body: JSON.stringify({
-              nom: nomRef.current?.value.trim() || '',
-              prenom: prenomRef.current?.value.trim() || '',
-              email: emailRef.current?.value.trim() || '',
-              answers: enrichedAnswers,
-            }),
-          });
-
-          if (!response.ok) {
-            const error = await response.json();
-            console.error('Failed to submit answers:', error);
-            
-            // Handle duplicate submission error
-            if (response.status === 409 && error.code === 'DUPLICATE_SUBMISSION') {
-              // User already submitted - show message
-              alert('Vous avez déjà soumis ce formulaire. Merci de votre participation!');
-              hasSubmittedRef.current = true; // Prevent retry
-            }
-            // You can show an error message to the user here if needed
-          } else {
-            const result = await response.json();
-            console.log('Answers submitted successfully:', result);
-            // Store submission in localStorage as backup
-            if (typeof window !== 'undefined') {
-              localStorage.setItem('survey_submitted', 'true');
-              localStorage.setItem('survey_submitted_at', Date.now().toString());
-              
-              // Clear survey progress after successful submission
-              localStorage.removeItem('survey_answers');
-              localStorage.removeItem('survey_current_index');
-              localStorage.removeItem('survey_completed');
-              localStorage.removeItem('survey_email');
-              localStorage.removeItem('survey_nom');
-              localStorage.removeItem('survey_prenom');
-              localStorage.removeItem('survey_email_verified');
-            }
-          }
-        } catch (error) {
-          console.error('Error submitting answers:', error);
-          // You can show an error message to the user here if needed
-        }
-      };
-
-      submitAnswers();
+      // Show confirmation modal instead of submitting directly
+      setShowConfirmationModal(true);
     }
   }, [isCompleted, answers]);
+
+  // Handle confirmation from modal
+  const handleConfirmSubmission = useCallback(async () => {
+    await submitAnswers();
+  }, [submitAnswers]);
   
   const questionContentRef = useRef<HTMLDivElement>(null)
   const lastSectionRef = useRef<string | null>(null)
@@ -766,11 +799,14 @@ export default function SurveyLanding() {
     setIsRequestingCode(true)
     setEmailError('')
     setCodeError('')
+    setShowResendCode(false)
     
     try {
       // Add timeout to prevent hanging
+      // Increased to 20s to handle Next.js dev mode compilation (first request)
+      // In production, routes are pre-compiled so this won't be needed
       const controller = new AbortController()
-      const timeoutId = setTimeout(() => controller.abort(), 10000) // 10 second timeout
+      const timeoutId = setTimeout(() => controller.abort(), 20000) // 20 second timeout
       
       const response = await fetch('/api/auth/request-code', {
         method: 'POST',
@@ -783,20 +819,34 @@ export default function SurveyLanding() {
       const data = await response.json()
       
       if (!response.ok) {
-        setEmailError(data.error || 'Erreur lors de l\'envoi du code')
+        const errorMsg = data.error || 'Erreur lors de l\'envoi du code'
+        setEmailError(errorMsg)
+        toastError('Erreur', errorMsg)
         return
       }
       
       setCodeSent(true)
       setCodeSuccess('Code envoyé! Vérifiez votre boîte email.')
+      setShowResendCode(false)
+      // Clear the code input field
+      if (codeRef.current) {
+        codeRef.current.value = ''
+      }
+      toastSuccess('Code envoyé!', 'Vérifiez votre boîte email pour recevoir le code de vérification.')
       // Clear success message after 3 seconds
       setTimeout(() => setCodeSuccess(''), 3000)
     } catch (error: any) {
       if (error.name === 'AbortError') {
-        setEmailError('La requête a pris trop de temps. Veuillez réessayer.')
+        const errorMsg = 'La requête a pris trop de temps. Veuillez réessayer.'
+        setEmailError(errorMsg)
+        toastError('Timeout', errorMsg)
       } else {
-        console.error('Error requesting code:', error)
-        setEmailError('Erreur de connexion. Veuillez réessayer.')
+        if (process.env.NODE_ENV !== 'production') {
+          console.error('Error requesting code:', error);
+        }
+        const errorMsg = 'Erreur de connexion. Veuillez réessayer.'
+        setEmailError(errorMsg)
+        toastError('Erreur de connexion', errorMsg)
       }
     } finally {
       setIsRequestingCode(false)
@@ -810,7 +860,9 @@ export default function SurveyLanding() {
     
     // Debug logging (only in development)
     if (process.env.NODE_ENV !== 'production') {
-      console.log('[Frontend] Verifying code for email:', email)
+      console.log('[Frontend] Verifying code for email:', email);
+      console.log('[Frontend] Code:', code);
+      console.log('[Frontend] Code length:', code?.length);
     }
     
     if (!email || !code) {
@@ -825,13 +877,18 @@ export default function SurveyLanding() {
     
     setIsVerifyingCode(true)
     setCodeError('')
+    setShowResendCode(false)
     
     try {
       // Add timeout to prevent hanging
+      // Increased to 20s to handle Next.js dev mode compilation (first request)
+      // In production, routes are pre-compiled so this won't be needed
       const controller = new AbortController()
-      const timeoutId = setTimeout(() => controller.abort(), 5000) // 5 second timeout (verification is fast)
+      const timeoutId = setTimeout(() => controller.abort(), 20000) // 20 second timeout
       
       const requestBody = { email, code }
+      console.log('[Frontend] Request body:', requestBody);
+      console.log('[Frontend] JSON stringified:', JSON.stringify(requestBody));
       
       const response = await fetch('/api/auth/verify-code', {
         method: 'POST',
@@ -844,19 +901,39 @@ export default function SurveyLanding() {
       const data = await response.json()
       
       if (!response.ok) {
+        let errorMsg = '';
+        let shouldShowResend = false;
+        
         if (response.status === 429) {
-          setCodeError('Trop de tentatives. Veuillez demander un nouveau code.')
+          errorMsg = 'Trop de tentatives. Veuillez demander un nouveau code.'
+          toastError('Trop de tentatives', errorMsg)
+          shouldShowResend = true;
         } else if (response.status === 410) {
-          setCodeError('Code expiré. Veuillez demander un nouveau code.')
+          errorMsg = 'Code expiré. Veuillez demander un nouveau code.'
+          toastError('Code expiré', errorMsg)
+          shouldShowResend = true;
+        } else if (response.status === 404 && data.reason === 'not_found') {
+          errorMsg = 'Code non trouvé. Veuillez demander un nouveau code.'
+          toastError('Code non trouvé', errorMsg)
+          shouldShowResend = true;
         } else {
-          setCodeError(data.error || 'Code invalide')
+          errorMsg = data.error || 'Code invalide'
+          toastError('Code invalide', errorMsg)
+          // Show resend button if it's an invalid code with no attempts left
+          if (data.reason === 'invalid' && (!data.attemptsLeft || data.attemptsLeft === 0)) {
+            shouldShowResend = true;
+          }
         }
+        
+        setCodeError(errorMsg)
+        setShowResendCode(shouldShowResend)
         return
       }
       
       if (data.verified) {
         setEmailVerified(true)
         setCodeSuccess('Email vérifié avec succès!')
+        toastSuccess('Email vérifié!', 'Vous pouvez maintenant continuer avec le formulaire.')
         
         // Save verified email to localStorage
         if (typeof window !== 'undefined' && data.email) {
@@ -867,10 +944,16 @@ export default function SurveyLanding() {
       }
     } catch (error: any) {
       if (error.name === 'AbortError') {
-        setCodeError('La requête a pris trop de temps. Veuillez réessayer.')
+        const errorMsg = 'La requête a pris trop de temps. Veuillez réessayer.'
+        setCodeError(errorMsg)
+        toastError('Timeout', errorMsg)
       } else {
-        console.error('Error verifying code:', error)
-        setCodeError('Erreur de connexion. Veuillez réessayer.')
+        if (process.env.NODE_ENV !== 'production') {
+          console.error('Error verifying code:', error);
+        }
+        const errorMsg = 'Erreur de connexion. Veuillez réessayer.'
+        setCodeError(errorMsg)
+        toastError('Erreur de connexion', errorMsg)
       }
     } finally {
       setIsVerifyingCode(false)
@@ -905,8 +988,10 @@ export default function SurveyLanding() {
       <motion.div
         className="absolute inset-0 -z-10"
         style={{
-          background: currentBackground,
+          backgroundImage: currentBackground,
           backgroundSize: '400% 400%',
+          backgroundRepeat: 'no-repeat',
+          backgroundPosition: '0% 50%',
         }}
         animate={showNextPage ? {
           backgroundPosition: ['0% 50%', '100% 50%', '0% 50%'],
@@ -1353,12 +1438,39 @@ export default function SurveyLanding() {
                           <motion.div
                             initial={{ opacity: 0, y: -10 }}
                             animate={{ opacity: 1, y: 0 }}
-                            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-red-50 border-2 border-red-200 text-red-700 text-sm font-medium"
+                            className="space-y-2"
                           >
-                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                            </svg>
-                            <span>{codeError}</span>
+                            <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-red-50 border-2 border-red-200 text-red-700 text-sm font-medium">
+                              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                              </svg>
+                              <span>{codeError}</span>
+                            </div>
+                            
+                            {showResendCode && (
+                              <motion.button
+                                initial={{ opacity: 0, y: -5 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                type="button"
+                                onClick={handleRequestCode}
+                                disabled={isRequestingCode}
+                                className="w-full px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                              >
+                                {isRequestingCode ? (
+                                  <>
+                                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                    <span>Envoi en cours...</span>
+                                  </>
+                                ) : (
+                                  <>
+                                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                                    </svg>
+                                    <span>Renvoyer un nouveau code</span>
+                                  </>
+                                )}
+                              </motion.button>
+                            )}
                           </motion.div>
                         )}
                         
@@ -1551,6 +1663,22 @@ export default function SurveyLanding() {
           onNavigate={goToQuestion}
         />
       )}
+
+      {/* Submission Confirmation Modal */}
+      <SubmissionConfirmationModal
+        isOpen={showConfirmationModal}
+        onClose={() => {
+          if (!isSubmitting) {
+            setShowConfirmationModal(false);
+          }
+        }}
+        onConfirm={handleConfirmSubmission}
+        answers={answers}
+        nom={nomRef.current?.value.trim() || ''}
+        prenom={prenomRef.current?.value.trim() || ''}
+        email={emailRef.current?.value.trim() || ''}
+        isSubmitting={isSubmitting}
+      />
 
       {/* Accessibility Features */}
       <AccessibilityMenu />

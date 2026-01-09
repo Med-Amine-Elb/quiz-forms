@@ -2,7 +2,8 @@
 
 import { useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Check, Loader2 } from "lucide-react";
+import { Check } from "lucide-react";
+import LoadingSpinner from "@/components/ui/loading-spinner";
 import { cn } from "@/lib/utils";
 
 interface ContinueButtonProps {
@@ -145,7 +146,7 @@ export default function ContinueButton({
               transition={{ duration: 0.2 }}
               className="flex items-center gap-2"
             >
-              <Loader2 className="w-5 h-5 animate-spin" />
+              <LoadingSpinner size="sm" color="currentColor" />
               <span>Chargement...</span>
             </motion.div>
           ) : showSuccess ? (

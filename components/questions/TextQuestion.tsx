@@ -99,31 +99,60 @@ export default function TextQuestion({
       {/* Special message for last question */}
       {isLastQuestion && (
         <motion.div
-          initial={{ opacity: 0, y: -20 }}
+          initial={{ opacity: 0, y: -15 }}
           animate={{ opacity: 1, y: 0 }}
+          transition={{
+            duration: 0.5,
+            ease: [0.16, 1, 0.3, 1],
+          }}
+          style={{
+            willChange: 'transform, opacity',
+          }}
           className="w-full max-w-3xl mx-auto mb-6 text-center"
         >
           <motion.div
-            initial={{ scale: 0 }}
-            animate={{ scale: 1 }}
-            transition={{ type: "spring", stiffness: 400, damping: 20 }}
+            initial={{ scale: 0, rotate: -180 }}
+            animate={{ scale: 1, rotate: 0 }}
+            transition={{ 
+              type: "spring", 
+              stiffness: 500, 
+              damping: 30,
+              delay: 0.1,
+            }}
+            style={{
+              willChange: 'transform',
+            }}
             className="inline-block text-5xl mb-3"
           >
             💬
           </motion.div>
           <motion.h3
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.2 }}
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ 
+              delay: 0.2,
+              duration: 0.5,
+              ease: [0.16, 1, 0.3, 1],
+            }}
+            style={{
+              color: accentColor,
+              willChange: 'transform, opacity',
+            }}
             className="text-2xl font-bold font-inter mb-2"
-            style={{ color: accentColor }}
           >
             Un dernier message
           </motion.h3>
           <motion.p
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.3 }}
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ 
+              delay: 0.3,
+              duration: 0.5,
+              ease: [0.16, 1, 0.3, 1],
+            }}
+            style={{
+              willChange: 'transform, opacity',
+            }}
             className="text-gray-700 font-inter"
           >
             Partagez vos impressions avec l'équipe DSI
@@ -136,6 +165,12 @@ export default function TextQuestion({
         <div className="relative">
           {/* Modern Card Container */}
           <motion.div
+            initial={{ opacity: 0, y: 10, scale: 0.98 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            transition={{
+              duration: 0.5,
+              ease: [0.16, 1, 0.3, 1],
+            }}
             className={cn(
               "relative rounded-2xl backdrop-blur-xl border-2 overflow-hidden transition-all duration-300",
               "shadow-lg group bg-white/90"
@@ -145,13 +180,13 @@ export default function TextQuestion({
               boxShadow: isFocused
                 ? `0 20px 60px ${accentColor}30, 0 0 0 3px ${accentColor}20`
                 : '0 10px 40px rgba(0, 0, 0, 0.08)',
+              willChange: 'transform, opacity',
             }}
             whileHover={{
               boxShadow: isFocused 
                 ? `0 20px 60px ${accentColor}30, 0 0 0 3px ${accentColor}20`
                 : `0 15px 50px rgba(0, 0, 0, 0.12)`,
             }}
-            transition={{ duration: 0.2 }}
           >
             {/* Floating Label */}
             <motion.label

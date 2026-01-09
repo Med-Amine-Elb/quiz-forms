@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { rateLimit, rateLimitConfigs } from '@/lib/ratelimit';
+import { handleApiError, createErrorResponse, createExternalServiceErrorResponse } from '@/lib/errorHandler';
 
 /**
  * API Route: GET /api/questions
@@ -24,7 +25,7 @@ export async function GET(request: NextRequest) {
   try {
     // Rate limiting - Prevent excessive requests
     const ip = rateLimit.getIP(request);
-    const { success, remaining, resetTime } = rateLimit.check(ip, rateLimitConfigs.questions);
+    const { success, remaining, resetTime } = await rateLimit.check(ip, rateLimitConfigs.questions);
     
     if (!success) {
       const retryAfter = Math.ceil((resetTime - Date.now()) / 1000);
@@ -48,16 +49,18 @@ export async function GET(request: NextRequest) {
     const apiKey = process.env.POWER_AUTOMATE_API_KEY;
 
     if (!powerAutomateUrl) {
-      return NextResponse.json(
-        { error: 'Power Automate URL not configured. Please set POWER_AUTOMATE_QUESTIONS_URL in .env.local' },
-        { status: 500 }
+      return createErrorResponse(
+        new Error('POWER_AUTOMATE_QUESTIONS_URL not configured'),
+        500,
+        { code: 'CONFIGURATION_ERROR', context: 'GET /api/questions' }
       );
     }
 
     if (!apiKey) {
-      return NextResponse.json(
-        { error: 'API key not configured. Please set POWER_AUTOMATE_API_KEY in .env.local' },
-        { status: 500 }
+      return createErrorResponse(
+        new Error('POWER_AUTOMATE_API_KEY not configured'),
+        500,
+        { code: 'CONFIGURATION_ERROR', context: 'GET /api/questions' }
       );
     }
 
@@ -72,10 +75,10 @@ export async function GET(request: NextRequest) {
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('Power Automate error:', errorText);
-      return NextResponse.json(
-        { error: 'Failed to fetch questions from Power Automate', details: errorText },
-        { status: response.status }
+      return createExternalServiceErrorResponse(
+        'Power Automate',
+        new Error(errorText || 'Power Automate request failed'),
+        'GET /api/questions'
       );
     }
 
@@ -144,14 +147,14 @@ export async function GET(request: NextRequest) {
       headers: {
         'X-RateLimit-Remaining': remaining.toString(),
         'X-RateLimit-Reset': resetTime.toString(),
+        // Cache headers for performance
+        'Cache-Control': 'public, s-maxage=60, stale-while-revalidate=300',
+        'CDN-Cache-Control': 'public, s-maxage=60',
+        'Vercel-CDN-Cache-Control': 'public, s-maxage=60',
       }
     });
   } catch (error) {
-    console.error('Error fetching questions:', error);
-    return NextResponse.json(
-      { error: 'Internal server error', details: error instanceof Error ? error.message : 'Unknown error' },
-      { status: 500 }
-    );
+    return handleApiError(error, 'GET /api/questions');
   }
 }
 

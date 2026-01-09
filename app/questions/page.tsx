@@ -24,32 +24,76 @@ export default function QuestionsPage() {
   useEffect(() => {
     if (!currentQuestion || !pageRef.current) return;
 
-    // Reset states
+    // Reset states with smooth fade out
     if (questionContentRef.current) {
-      gsap.set(questionContentRef.current, { opacity: 0, y: 30 });
+      gsap.to(questionContentRef.current, {
+        opacity: 0,
+        y: 10,
+        duration: 0.3,
+        ease: 'power2.in',
+        onComplete: () => {
+          gsap.set(questionContentRef.current, { opacity: 0, y: 20 });
+        }
+      });
     }
     if (avatarRef.current) {
-      gsap.set(avatarRef.current, { opacity: 0 });
+      gsap.to(avatarRef.current, {
+        opacity: 0,
+        duration: 0.3,
+        ease: 'power2.in',
+        onComplete: () => {
+          gsap.set(avatarRef.current, { opacity: 0 });
+        }
+      });
     }
 
     // Animate content and avatar after question header animation completes
+    // Wait for section intro to fade out (0.5s) + small delay for smooth transition
     const timer = setTimeout(() => {
-      const tl = gsap.timeline();
-      
-      tl.to(questionContentRef.current, {
-        opacity: 1,
-        y: 0,
-        duration: 0.8,
-        ease: 'power2.out',
-      })
-        .to(avatarRef.current, {
-          opacity: 1,
-          duration: 1,
+      const tl = gsap.timeline({ 
+        defaults: { 
           ease: 'power2.out',
-        }, '-=0.3');
-    }, 2000); // Wait for question header animation to complete
+        } 
+      });
+      
+      // Animate question content (answers) with smooth fade and slide
+      if (questionContentRef.current) {
+        tl.fromTo(questionContentRef.current, 
+          { opacity: 0, y: 20 },
+          {
+            opacity: 1,
+            y: 0,
+            duration: 0.6,
+            ease: 'power2.out',
+          }, 
+          0
+        );
+      }
+      
+      // Animate avatar with slight delay for staggered effect
+      if (avatarRef.current) {
+        tl.fromTo(avatarRef.current,
+          { opacity: 0 },
+          {
+            opacity: 1,
+            duration: 0.8,
+            ease: 'power2.out',
+          }, 
+          0.15
+        );
+      }
+    }, 600); // Optimized delay for better synchronization
 
-    return () => clearTimeout(timer);
+    return () => {
+      clearTimeout(timer);
+      // Kill any running animations
+      if (questionContentRef.current) {
+        gsap.killTweensOf(questionContentRef.current);
+      }
+      if (avatarRef.current) {
+        gsap.killTweensOf(avatarRef.current);
+      }
+    };
   }, [currentQuestionIndex]);
 
   if (!currentQuestion) {

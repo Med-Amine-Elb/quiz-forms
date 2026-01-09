@@ -1,11 +1,16 @@
 import type { Metadata } from 'next'
-import { Geist, Geist_Mono, Inter } from 'next/font/google'
+import { Inter } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/next'
+import { Toaster } from '@/components/ui/toaster'
 import './globals.css'
 
-const _geist = Geist({ subsets: ["latin"] });
-const _geistMono = Geist_Mono({ subsets: ["latin"] });
-const _inter = Inter({ subsets: ["latin"] });
+// Optimize font loading with display swap for better performance
+const inter = Inter({ 
+  subsets: ["latin"],
+  display: 'swap',
+  preload: true,
+  variable: '--font-inter',
+});
 
 export const metadata: Metadata = {
   title: 'SBM Enquête de satisfaction 2024',
@@ -36,9 +41,22 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="fr">
-      <body className={`font-sans antialiased`}>
+    <html lang="fr" className={inter.variable}>
+      <head>
+        {/* Preconnect to external domains for faster loading */}
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        {/* DNS prefetch for Power Automate */}
+        {process.env.POWER_AUTOMATE_QUESTIONS_URL && (
+          <link rel="dns-prefetch" href={new URL(process.env.POWER_AUTOMATE_QUESTIONS_URL).origin} />
+        )}
+        {process.env.POWER_AUTOMATE_SUBMIT_URL && (
+          <link rel="dns-prefetch" href={new URL(process.env.POWER_AUTOMATE_SUBMIT_URL).origin} />
+        )}
+      </head>
+      <body className={`${inter.className} font-sans antialiased`}>
         {children}
+        <Toaster />
         <Analytics />
       </body>
     </html>

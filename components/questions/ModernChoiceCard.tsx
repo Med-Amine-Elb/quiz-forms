@@ -37,19 +37,28 @@ export default function ModernChoiceCard({
   return (
     <motion.button
       onClick={onClick}
-      initial={{ opacity: 0, y: 30, scale: 0.9 }}
+      initial={{ opacity: 0, y: 20, scale: 0.96 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
       transition={{
         duration: 0.5,
-        delay: index * 0.1,
-        ease: [0.25, 0.4, 0.25, 1],
+        delay: index * 0.08,
+        ease: [0.16, 1, 0.3, 1],
       }}
       whileHover={{ 
         scale: 1.02,
         y: -4,
-        transition: { duration: 0.2 },
+        transition: { 
+          duration: 0.25,
+          ease: [0.16, 1, 0.3, 1],
+        },
       }}
-      whileTap={{ scale: 0.98 }}
+      whileTap={{ 
+        scale: 0.98,
+        transition: { duration: 0.15 },
+      }}
+      style={{
+        willChange: 'transform, opacity',
+      }}
       className={cn(
         "relative w-full rounded-2xl text-left transition-all duration-300",
         "border-2 font-inter font-semibold",

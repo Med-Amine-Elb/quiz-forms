@@ -26,7 +26,7 @@ export default function AnimatedQuestionCard({
     setIsVisible(false);
     const timer = setTimeout(() => {
       setIsVisible(true);
-    }, 200);
+    }, 100); // Reduced delay for faster transition
     return () => clearTimeout(timer);
   }, [questionNumber]);
 
@@ -39,14 +39,17 @@ export default function AnimatedQuestionCard({
       {isVisible && (
         <motion.div
           key={questionNumber}
-          initial={{ opacity: 0, y: 20, scale: 0.98 }}
+          initial={{ opacity: 0, y: 15, scale: 0.97 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
-          exit={{ opacity: 0, y: -10, scale: 0.98 }}
+          exit={{ opacity: 0, y: -15, scale: 0.97, x: -20 }}
           transition={{
-            duration: 0.4,
-            ease: [0.25, 0.4, 0.25, 1],
+            duration: 0.5,
+            ease: [0.16, 1, 0.3, 1],
           }}
-            className="w-full max-w-3xl mx-auto mb-8"
+          style={{
+            willChange: 'transform, opacity',
+          }}
+          className="w-full max-w-4xl mx-auto mb-8"
         >
           {/* Main Card - Larger for first question */}
           <motion.div
@@ -84,13 +87,13 @@ export default function AnimatedQuestionCard({
               >
                 {/* Question Number - Larger, Bolder, Colored */}
                 <motion.div
-                  initial={{ scale: 0 }}
-                  animate={{ scale: 1 }}
+                  initial={{ scale: 0, rotate: -180 }}
+                  animate={{ scale: 1, rotate: 0 }}
                   transition={{
                     type: "spring",
-                    stiffness: 400,
-                    damping: 25,
-                    delay: 0.2,
+                    stiffness: 500,
+                    damping: 30,
+                    delay: 0.15,
                   }}
                   className={cn(
                     "flex items-center justify-center rounded-xl font-bold font-inter shrink-0",
@@ -100,6 +103,7 @@ export default function AnimatedQuestionCard({
                     background: `linear-gradient(135deg, ${color}, ${color}ee)`,
                     color: 'white',
                     boxShadow: `0 6px 20px ${color}40`,
+                    willChange: 'transform',
                   }}
                 >
                   {questionNumber}
@@ -107,10 +111,17 @@ export default function AnimatedQuestionCard({
                 
                 {/* Question Text - Clear Hierarchy with Better Spacing */}
                 <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ duration: 0.4, delay: 0.2 }}
+                  initial={{ opacity: 0, x: -10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ 
+                    duration: 0.5, 
+                    delay: 0.2,
+                    ease: [0.16, 1, 0.3, 1],
+                  }}
                   className="flex-1 min-w-0 pt-1"
+                  style={{
+                    willChange: 'transform, opacity',
+                  }}
                 >
                   <h2 className={cn(
                     "font-bold text-gray-900 font-inter leading-tight tracking-tight whitespace-normal",
@@ -165,25 +176,37 @@ export default function AnimatedQuestionCard({
                 </motion.div>
               </motion.div>
 
-              {/* Subtle decorative line - Better spacing */}
-              <motion.div
-                initial={{ width: 0, opacity: 0 }}
-                animate={{ width: '100%', opacity: 0.2 }}
-                transition={{ duration: 0.6, delay: 0.4 }}
-                className="h-[1px] mt-2"
-                style={{
-                  background: `linear-gradient(to right, transparent, ${color}40, transparent)`,
-                }}
-              />
+            {/* Subtle decorative line - Better spacing */}
+            <motion.div
+              initial={{ width: 0, opacity: 0 }}
+              animate={{ width: '100%', opacity: 0.2 }}
+              transition={{ 
+                duration: 0.5, 
+                delay: 0.35,
+                ease: [0.16, 1, 0.3, 1],
+              }}
+              className="h-[1px] mt-2"
+              style={{
+                background: `linear-gradient(to right, transparent, ${color}40, transparent)`,
+                willChange: 'width, opacity',
+              }}
+            />
             </div>
 
             {/* Subtle corner accent - Smaller */}
             <motion.div
-              initial={{ scale: 0, rotate: -45 }}
-              animate={{ scale: 1, rotate: -45 }}
-              transition={{ duration: 0.4, delay: 0.3 }}
-              className="absolute -top-6 -right-6 w-16 h-16 rounded-full opacity-15 blur-lg"
-              style={{ backgroundColor: color }}
+              initial={{ scale: 0, rotate: -45, opacity: 0 }}
+              animate={{ scale: 1, rotate: -45, opacity: 0.15 }}
+              transition={{ 
+                duration: 0.5, 
+                delay: 0.25,
+                ease: [0.16, 1, 0.3, 1],
+              }}
+              className="absolute -top-6 -right-6 w-16 h-16 rounded-full blur-lg"
+              style={{ 
+                backgroundColor: color,
+                willChange: 'transform, opacity',
+              }}
             />
           </motion.div>
         </motion.div>

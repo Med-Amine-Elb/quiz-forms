@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Clear Survey Cache</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        button {
+            background: #3B82F6;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-top: 20px;
+        }
+        button:hover {
+            background: #2563EB;
+        }
+        .success {
+            color: #10B981;
+            margin-top: 20px;
+            font-weight: bold;
+        }
+        .info {
+            background: #EFF6FF;
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            border-left: 4px solid #3B82F6;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧹 Nettoyer le Cache du Sondage</h1>
+        <div class="info">
+            <p>Cette page permet de vider le cache localStorage qui peut contenir d'anciennes versions des questions.</p>
+            <p><strong>Après avoir nettoyé le cache, retournez à la page principale du sondage.</strong></p>
+        </div>
+        <button onclick="clearCache()">Nettoyer le Cache</button>
+        <div id="result"></div>
+    </div>
+
+    <script>
+        function clearCache() {
+            try {
+                // Clear all survey-related localStorage items
+                localStorage.removeItem('survey_answers');
+                localStorage.removeItem('survey_current_index');
+                localStorage.removeItem('survey_completed');
+                localStorage.removeItem('survey_questions_version');
+                localStorage.removeItem('survey_progress');
+                
+                const resultDiv = document.getElementById('result');
+                resultDiv.innerHTML = '<div class="success">✅ Cache nettoyé avec succès !<br><br>Vous pouvez maintenant retourner à la page principale du sondage.</div>';
+                
+                console.log('Survey cache cleared successfully');
+            } catch (error) {
+                document.getElementById('result').innerHTML = '<div style="color: red;">❌ Erreur lors du nettoyage: ' + error.message + '</div>';
+                console.error('Error clearing cache:', error);
+            }
+        }
+        
+        // Auto-clear on page load (optional)
+        // clearCache();
+    </script>
+</body>
+</html>
+
+
+

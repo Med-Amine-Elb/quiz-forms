@@ -1,12 +1,29 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { transporter } from '@/lib/mailer';
+import { createErrorResponse, createEmailErrorResponse } from '@/lib/errorHandler';
 
 export async function POST(request: NextRequest) {
   try {
-    const { email, subject, text } = await request.json();
+    // Parse request body with proper error handling
+    let body: { email?: string; subject?: string; text?: string };
+    try {
+      body = await request.json();
+    } catch (error) {
+      return createErrorResponse(
+        error,
+        400,
+        { code: 'INVALID_JSON', context: 'POST /api/smtp', customMessage: 'Format JSON invalide' }
+      );
+    }
+
+    const { email, subject, text } = body;
 
     if (!email) {
-      return NextResponse.json({ error: 'Recipient email is required' }, { status: 400 });
+      return createErrorResponse(
+        new Error('Recipient email is required'),
+        400,
+        { code: 'MISSING_EMAIL', context: 'POST /api/smtp' }
+      );
     }
 
     await transporter.sendMail({
@@ -18,7 +35,6 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ message: 'Email sent successfully' });
   } catch (error) {
-    console.error('SMTP send error', error);
-    return NextResponse.json({ error: 'Failed to send email' }, { status: 500 });
+    return createEmailErrorResponse(error, 'POST /api/smtp');
   }
 }
