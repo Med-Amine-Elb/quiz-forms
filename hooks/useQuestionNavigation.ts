@@ -18,8 +18,12 @@ function getQuestionsVersion(): string {
   const questionIds = questions.map(q => q.id).join(',');
   const questionTypes = questions.map(q => q.type).join(',');
   const totalQuestions = questions.length;
+  // Include section boundaries in version to force cache clear when sections change
+  // Updated version to force cache clear for design and section fixes
+  // Version 5: Force cache clear - questions are correctly positioned (IA: 19-24, Communication: 25-27)
+  const sectionHash = 'v5-questions-verified-correct';
   // Simple hash: combine all info
-  return `${totalQuestions}-${questionIds.substring(0, 50)}-${questionTypes.substring(0, 30)}`;
+  return `${totalQuestions}-${questionIds.substring(0, 50)}-${questionTypes.substring(0, 30)}-${sectionHash}`;
 }
 
 // Check if questions have changed and clear cache if needed
@@ -32,9 +36,25 @@ function checkQuestionsVersion() {
     
     // If version changed or doesn't exist, clear all survey data
     if (savedVersion !== currentVersion) {
-      console.log('Questions have changed, clearing survey cache...');
+      console.log('Questions have changed, clearing survey cache...', {
+        old: savedVersion,
+        new: currentVersion
+      });
+      // Clear all survey-related localStorage
       clearSavedProgress();
+      // Also clear the version key to ensure fresh start
+      localStorage.removeItem(STORAGE_QUESTIONS_VERSION_KEY);
+      // Set new version
       localStorage.setItem(STORAGE_QUESTIONS_VERSION_KEY, currentVersion);
+      // Force page reload to ensure fresh components (only in dev)
+      if (process.env.NODE_ENV === 'development') {
+        console.log('Development mode: Reloading page to apply changes...');
+        setTimeout(() => {
+          if (typeof window !== 'undefined') {
+            window.location.reload();
+          }
+        }, 1000);
+      }
     }
   } catch (error) {
     if (process.env.NODE_ENV !== 'production') {
@@ -144,15 +164,32 @@ export function useQuestionNavigation() {
     startTransition(() => {
       const currentQ = questions[currentQuestionIndex];
       
-      // Save the answer
+      // Save the answer - update if exists, otherwise add new
       setAnswers((prevAnswers) => {
-        const newAnswers = [
-          ...prevAnswers,
-          {
+        // Check if an answer for this question already exists
+        const existingAnswerIndex = prevAnswers.findIndex(
+          (ans) => ans.questionId === currentQ.id
+        );
+        
+        let newAnswers: QuestionAnswer[];
+        
+        if (existingAnswerIndex >= 0) {
+          // Update existing answer
+          newAnswers = [...prevAnswers];
+          newAnswers[existingAnswerIndex] = {
             questionId: currentQ.id,
             answer,
-          },
-        ];
+          };
+        } else {
+          // Add new answer
+          newAnswers = [
+            ...prevAnswers,
+            {
+              questionId: currentQ.id,
+              answer,
+            },
+          ];
+        }
         
         // If this is the last question, mark as completed
         if (currentQuestionIndex === questions.length - 1) {
@@ -180,8 +217,8 @@ export function useQuestionNavigation() {
     if (!isFirstQuestion) {
       startTransition(() => {
         setCurrentQuestionIndex((prev) => prev - 1);
-        // Remove last answer when going back
-        setAnswers((prev) => prev.slice(0, -1));
+        // Don't remove answers when going back - keep them so users can review/change
+        // Answers will be updated if user changes their response
       });
     }
   }, [isFirstQuestion, startTransition]);

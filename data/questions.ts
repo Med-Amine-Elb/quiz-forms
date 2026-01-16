@@ -13,7 +13,46 @@ import {
   FlaskConical,
   Shield,
   ShoppingBag,
-  FileCheck
+  FileCheck,
+  Sparkles,
+  Briefcase,
+  Target,
+  Crown,
+  CheckCircle2,
+  ThumbsUp,
+  Scale as Balance,
+  AlertTriangle,
+  XCircle,
+  Star,
+  Zap,
+  Clock,
+  Turtle,
+  Smile,
+  Frown,
+  Meh,
+  Timer,
+  TrendingUp,
+  Wrench,
+  Monitor,
+  Wallet,
+  BarChart3,
+  Globe,
+  Ticket,
+  Settings,
+  BookOpen,
+  CheckCircle,
+  AlertCircle,
+  X,
+  Video,
+  FileText,
+  HelpCircle,
+  Lock,
+  Laptop as LaptopIcon,
+  RefreshCw,
+  Repeat,
+  Lightbulb,
+  FileText as FileTextIcon,
+  Circle
 } from 'lucide-react';
 
 export interface QuestionChoice {
@@ -27,12 +66,17 @@ export interface QuestionChoice {
 
 export interface Question {
   id: number;
-  type: 'choice' | 'text' | 'rating' | 'multiple' | 'satisfaction';
+  type: 'choice' | 'text' | 'rating' | 'multiple' | 'satisfaction' | 'slider';
   question: string;
   choices?: QuestionChoice[];
   placeholder?: string;
   required?: boolean;
   maxLength?: number;
+  sliderConfig?: {
+    min?: number;
+    max?: number;
+    labels?: string[];
+  };
 }
 
 export const questions: Question[] = [
@@ -40,11 +84,11 @@ export const questions: Question[] = [
   // SECTION 1: PROFIL & CONTEXTE UTILISATEUR
   // ============================================
   
-  // Question 1 - Direction
+  // Question 1 - Direction ou périmètre
   {
     id: 1,
     type: 'choice',
-    question: 'A quelle direction êtes-vous rattaché(e) ?',
+    question: 'Quelle est votre direction ou périmètre actuel ?',
     choices: [
       { id: 'direction-1', label: 'Direction Générale', icon: Building2 },
       { id: 'direction-2', label: 'Direction des Ressources Humaines', icon: Users },
@@ -62,7 +106,7 @@ export const questions: Question[] = [
     required: true,
   },
 
-  // Question 2 - Temps d'intégration GBM
+  // Question 2 - Temps d'intégration
   {
     id: 2,
     type: 'choice',
@@ -70,29 +114,33 @@ export const questions: Question[] = [
     choices: [
       { 
         id: 'time-1', 
-        label: 'Moins d\'un an',
+        label: 'Moins de 1 an',
         emoji: '🌟',
-        title: 'Moins d\'un an',
+        icon: Sparkles,
+        title: 'Moins de 1 an',
         description: 'Nouveau collaborateur'
       },
       { 
         id: 'time-2', 
-        label: 'Entre 1 an et 5 ans',
+        label: 'Entre 1 an Et 5 ans',
         emoji: '💼',
-        title: '1 à 5 ans',
+        icon: Briefcase,
+        title: 'Entre 1 an Et 5 ans',
         description: 'Collaborateur confirmé'
       },
       { 
         id: 'time-3', 
-        label: 'Entre 5 ans et 10 ans',
+        label: 'Entre 5 ans Et 10 ans',
         emoji: '🎯',
-        title: '5 à 10 ans',
+        icon: Target,
+        title: 'Entre 5 ans Et 10 ans',
         description: 'Collaborateur expérimenté'
       },
       { 
         id: 'time-4', 
         label: 'Plus de 10 ans',
         emoji: '👑',
+        icon: Crown,
         title: 'Plus de 10 ans',
         description: 'Collaborateur senior'
       },
@@ -114,36 +162,41 @@ export const questions: Question[] = [
         id: 'castel-needs-1', 
         label: 'Le dispositif répond pleinement à mes besoins quotidiens',
         emoji: '✅',
+        icon: CheckCircle2,
         title: 'Répond pleinement',
-        description: 'Le dispositif répond pleinement à mes besoins quotidiens'
+        description: ''
       },
       { 
         id: 'castel-needs-2', 
         label: 'Le service couvre la majorité de mes attentes métiers',
         emoji: '👍',
+        icon: ThumbsUp,
         title: 'Couvre la majorité',
-        description: 'Le service couvre la majorité de mes attentes métiers'
+        description: ''
       },
       { 
         id: 'castel-needs-3', 
         label: 'Le dispositif répond à certains besoins, mais des améliorations sont nécessaires',
         emoji: '⚖️',
+        icon: Balance,
         title: 'Améliorations nécessaires',
-        description: 'Le dispositif répond à certains besoins, mais des améliorations sont nécessaires'
+        description: ''
       },
       { 
         id: 'castel-needs-4', 
         label: 'Le service répond faiblement à mes attentes opérationnelles',
         emoji: '⚠️',
+        icon: AlertTriangle,
         title: 'Répond faiblement',
-        description: 'Le service répond faiblement à mes attentes opérationnelles'
+        description: ''
       },
       { 
         id: 'castel-needs-5', 
         label: 'Le dispositif ne répond pas à mes besoins quotidiens',
         emoji: '❌',
+        icon: XCircle,
         title: 'Ne répond pas',
-        description: 'Le dispositif ne répond pas à mes besoins quotidiens'
+        description: ''
       },
     ],
     required: true,
@@ -159,36 +212,41 @@ export const questions: Question[] = [
         id: 'support-ease-1', 
         label: 'Accès intuitif, démarches claires et suivi fluide des demandes',
         emoji: '🌟',
+        icon: Star,
         title: 'Intuitif et fluide',
-        description: 'Accès intuitif, démarches claires et suivi fluide des demandes'
+        description: ''
       },
       { 
         id: 'support-ease-2', 
         label: 'Utilisation globalement simple avec peu de contraintes',
         emoji: '👍',
+        icon: ThumbsUp,
         title: 'Simple',
-        description: 'Utilisation globalement simple avec peu de contraintes'
+        description: ''
       },
       { 
         id: 'support-ease-3', 
         label: 'Acceptable mais quelques améliorations nécessaires',
         emoji: '⚖️',
+        icon: Balance,
         title: 'Acceptable',
-        description: 'Acceptable mais quelques améliorations nécessaires'
+        description: ''
       },
       { 
         id: 'support-ease-4', 
         label: 'Accès ou suivi peu clairs, expérience complexe',
         emoji: '⚠️',
+        icon: AlertTriangle,
         title: 'Complexe',
-        description: 'Accès ou suivi peu clairs, expérience complexe'
+        description: ''
       },
       { 
         id: 'support-ease-5', 
         label: 'Parcours compliqué et manque de visibilité sur les demandes',
         emoji: '❌',
+        icon: XCircle,
         title: 'Très compliqué',
-        description: 'Parcours compliqué et manque de visibilité sur les demandes'
+        description: ''
       },
     ],
     required: true,
@@ -204,36 +262,41 @@ export const questions: Question[] = [
         id: 'support-feel-1', 
         label: 'Problème résolu rapidement et efficacement',
         emoji: '😄',
+        icon: Smile,
         title: 'Résolu rapidement',
-        description: 'Problème résolu rapidement et efficacement'
+        description: ''
       },
       { 
         id: 'support-feel-2', 
         label: 'Résolution correcte, mais quelques points à améliorer',
         emoji: '🙂',
+        icon: CheckCircle,
         title: 'Correct',
-        description: 'Résolution correcte, mais quelques points à améliorer'
+        description: ''
       },
       { 
         id: 'support-feel-3', 
         label: 'Résolution moyenne, expérience mitigée',
         emoji: '😐',
+        icon: Meh,
         title: 'Moyen',
-        description: 'Résolution moyenne, expérience mitigée'
+        description: ''
       },
       { 
         id: 'support-feel-4', 
         label: 'Résolution lente ou insatisfaisante',
         emoji: '🙁',
+        icon: Frown,
         title: 'Insatisfaisant',
-        description: 'Résolution lente ou insatisfaisante'
+        description: ''
       },
       { 
         id: 'support-feel-5', 
         label: 'Problème non résolu ou support inefficace',
         emoji: '😡',
+        icon: XCircle,
         title: 'Non résolu',
-        description: 'Problème non résolu ou support inefficace'
+        description: ''
       },
     ],
     required: true,
@@ -249,29 +312,33 @@ export const questions: Question[] = [
         id: 'resolve-time-1', 
         label: 'Résolution quasi immédiate',
         emoji: '⚡',
+        icon: Zap,
         title: 'Quasi immédiate',
-        description: 'Résolution quasi immédiate'
+        description: ''
       },
       { 
         id: 'resolve-time-2', 
         label: 'Délai correct et satisfaisant',
         emoji: '👍',
+        icon: ThumbsUp,
         title: 'Correct',
-        description: 'Délai correct et satisfaisant'
+        description: ''
       },
       { 
         id: 'resolve-time-3', 
         label: 'Délai raisonnable mais améliorable',
         emoji: '⏳',
+        icon: Clock,
         title: 'Améliorable',
-        description: 'Délai raisonnable mais améliorable'
+        description: ''
       },
       { 
         id: 'resolve-time-4', 
         label: 'Délai long, impactant l\'activité',
         emoji: '🐢',
+        icon: Timer,
         title: 'Trop long',
-        description: 'Délai long, impactant l\'activité'
+        description: ''
       },
     ],
     required: true,
@@ -287,36 +354,41 @@ export const questions: Question[] = [
         id: 'impact-1', 
         label: 'Temps de réponse aux demandes',
         emoji: '⏱️',
+        icon: Timer,
         title: 'Temps de réponse',
-        description: 'Temps de réponse aux demandes'
+        description: ''
       },
       { 
         id: 'impact-2', 
         label: 'Qualité de la communication et suivi',
         emoji: '📞',
+        icon: MessageSquare,
         title: 'Communication',
-        description: 'Qualité de la communication et suivi'
+        description: ''
       },
       { 
         id: 'impact-3', 
         label: 'Efficacité des solutions apportées',
         emoji: '🛠️',
+        icon: Wrench,
         title: 'Efficacité',
-        description: 'Efficacité des solutions apportées'
+        description: ''
       },
       { 
         id: 'impact-4', 
         label: 'Disponibilité des ressources IT',
         emoji: '👥',
+        icon: Users,
         title: 'Disponibilité',
-        description: 'Disponibilité des ressources IT'
+        description: ''
       },
       { 
         id: 'impact-5', 
         label: 'Simplicité et ergonomie des outils',
         emoji: '⚙️',
+        icon: Settings,
         title: 'Ergonomie',
-        description: 'Simplicité et ergonomie des outils'
+        description: ''
       },
     ],
     required: true,
@@ -332,36 +404,41 @@ export const questions: Question[] = [
         id: 'improve-1', 
         label: 'Résolution plus rapide des demandes',
         emoji: '⚡',
+        icon: Zap,
         title: 'Rapidité',
-        description: 'Résolution plus rapide des demandes'
+        description: ''
       },
       { 
         id: 'improve-2', 
         label: 'Solutions plus précises et efficaces',
         emoji: '🎯',
+        icon: Target,
         title: 'Précision',
-        description: 'Solutions plus précises et efficaces'
+        description: ''
       },
       { 
         id: 'improve-3', 
         label: 'Plus d\'accessibilité aux agents IT',
         emoji: '👥',
+        icon: Users,
         title: 'Accessibilité',
-        description: 'Plus d\'accessibilité aux agents IT'
+        description: ''
       },
       { 
         id: 'improve-4', 
         label: 'Interfaces et systèmes plus faciles à utiliser',
         emoji: '🖥️',
+        icon: Monitor,
         title: 'Simplicité',
-        description: 'Interfaces et systèmes plus faciles à utiliser'
+        description: ''
       },
       { 
         id: 'improve-5', 
         label: 'Renforcer les compétences des utilisateurs',
         emoji: '📚',
+        icon: BookOpen,
         title: 'Formation',
-        description: 'Renforcer les compétences des utilisateurs'
+        description: ''
       },
     ],
     required: true,
@@ -370,9 +447,20 @@ export const questions: Question[] = [
   // Question 9 - Note globale support informatique
   {
     id: 9,
-    type: 'satisfaction',
+    type: 'slider',
     question: 'Globalement, quelle note attribueriez-vous au support informatique ?',
     required: true,
+    sliderConfig: {
+      min: 1,
+      max: 5,
+      labels: [
+        'Insatisfaction totale, support inefficace',
+        'Support limité, aspects à améliorer',
+        'Expérience moyenne, quelques améliorations nécessaires',
+        'Très bonne expérience globale',
+        'Support très satisfaisant et efficace',
+      ],
+    },
   },
 
   // ============================================
@@ -394,36 +482,41 @@ export const questions: Question[] = [
         id: 'ergo-1', 
         label: 'Très ergonomiques : Interface intuitive, navigation fluide',
         emoji: '🌟',
+        icon: Star,
         title: 'Très ergonomiques',
-        description: 'Interface intuitive, navigation fluide'
+        description: ''
       },
       { 
         id: 'ergo-2', 
         label: 'Ergonomiques : Faciles à utiliser, mais quelques améliorations possibles',
         emoji: '👍',
+        icon: ThumbsUp,
         title: 'Ergonomiques',
-        description: 'Faciles à utiliser, mais quelques améliorations possibles'
+        description: ''
       },
       { 
         id: 'ergo-3', 
         label: 'Moyennement ergonomiques : Utilisation acceptable mais parfois complexe',
         emoji: '⚖️',
+        icon: Balance,
         title: 'Moyennement ergonomiques',
-        description: 'Utilisation acceptable mais parfois complexe'
+        description: ''
       },
       { 
         id: 'ergo-4', 
         label: 'Peu ergonomiques : Navigation difficile, impact sur la productivité',
         emoji: '⚠️',
+        icon: AlertTriangle,
         title: 'Peu ergonomiques',
-        description: 'Navigation difficile, impact sur la productivité'
+        description: ''
       },
       { 
         id: 'ergo-5', 
         label: 'Pas ergonomiques du tout : Interfaces compliquées, expérience frustrante',
         emoji: '❌',
+        icon: XCircle,
         title: 'Pas ergonomiques',
-        description: 'Interfaces compliquées, expérience frustrante'
+        description: ''
       },
     ],
     required: true,
@@ -435,14 +528,14 @@ export const questions: Question[] = [
     type: 'choice',
     question: 'Quel outil trouvez-vous le plus frustrant à utiliser ?',
     choices: [
-      { id: 'frustrating-1', label: 'SAP', emoji: '💼' },
-      { id: 'frustrating-2', label: 'Caisse', emoji: '💰' },
-      { id: 'frustrating-3', label: 'Assabil', emoji: '📊' },
-      { id: 'frustrating-4', label: 'Cosmos', emoji: '🌌' },
-      { id: 'frustrating-5', label: 'Agirh', emoji: '👤' },
-      { id: 'frustrating-6', label: 'Suite Microsoft', emoji: '🪟' },
-      { id: 'frustrating-7', label: 'Outil ticketing', emoji: '🎫' },
-      { id: 'frustrating-8', label: 'Autre', emoji: '🔧' },
+      { id: 'frustrating-1', label: 'SAP', emoji: '💼', icon: Briefcase },
+      { id: 'frustrating-2', label: 'Caisse', emoji: '💰', icon: Wallet },
+      { id: 'frustrating-3', label: 'Assabil', emoji: '📊', icon: BarChart3 },
+      { id: 'frustrating-4', label: 'Cosmos', emoji: '🌌', icon: Globe },
+      { id: 'frustrating-5', label: 'Agirh', emoji: '👤', icon: Users },
+      { id: 'frustrating-6', label: 'Suite Microsoft', emoji: '🪟', icon: Monitor },
+      { id: 'frustrating-7', label: 'Outil ticketing', emoji: '🎫', icon: Ticket },
+      { id: 'frustrating-8', label: 'Autre (champ texte libre pour préciser)', emoji: '🔧', icon: Wrench },
     ],
     required: true,
   },
@@ -457,36 +550,41 @@ export const questions: Question[] = [
         id: 'facilitate-1', 
         label: 'Amélioration de SAP / ERP',
         emoji: '💼',
+        icon: Briefcase,
         title: 'SAP / ERP',
-        description: 'Amélioration de SAP / ERP'
+        description: ''
       },
       { 
         id: 'facilitate-2', 
         label: 'Dashboards plus interactifs et clairs',
         emoji: '📊',
+        icon: BarChart3,
         title: 'Dashboards',
-        description: 'Dashboards plus interactifs et clairs'
+        description: ''
       },
       { 
         id: 'facilitate-3', 
         label: 'Outil de ticketing plus rapide et suivi transparent',
         emoji: '🎫',
+        icon: Ticket,
         title: 'Outil ticketing',
-        description: 'Outil de ticketing plus rapide et suivi transparent'
+        description: ''
       },
       { 
         id: 'facilitate-4', 
         label: 'Outils de caisse plus intuitifs',
         emoji: '💰',
+        icon: Wallet,
         title: 'Outils de caisse',
-        description: 'Outils de caisse plus intuitifs'
+        description: ''
       },
       { 
         id: 'facilitate-5', 
-        label: 'Autre',
+        label: 'Autre (champ texte libre)',
         emoji: '🔧',
+        icon: Wrench,
         title: 'Autre',
-        description: 'Autre'
+        description: ''
       },
     ],
     required: true,
@@ -505,89 +603,146 @@ export const questions: Question[] = [
   // SECTION 5: DIGITALISATION & INNOVATION
   // ============================================
 
-  // Question 14 - Supports interactifs IT
+  // Question 14 - Domaines de digitalisation prioritaires
   {
     id: 14,
-    type: 'choice',
-    question: 'Souhaiteriez-vous plus de supports interactifs pour mieux comprendre les outils IT ?',
+    type: 'multiple',
+    question: 'Quels domaines de digitalisation ou d\'innovation devraient être prioritaires pour la DSI selon vous ?',
     choices: [
       { 
-        id: 'support-interactive-1', 
-        label: 'Vidéos courtes et tutos',
-        emoji: '🎥',
-        title: 'Vidéos',
-        description: 'Vidéos courtes et tutos'
+        id: 'digital-priority-1', 
+        label: 'Automatisation des processus',
+        emoji: '🔄',
+        icon: Repeat,
+        title: 'Automatisation',
+        description: ''
       },
       { 
-        id: 'support-interactive-2', 
-        label: 'Guides et FAQ',
-        emoji: '📝',
-        title: 'Guides',
-        description: 'Guides et FAQ'
+        id: 'digital-priority-2', 
+        label: 'Outils de reporting et dashboards améliorés',
+        emoji: '📊',
+        icon: BarChart3,
+        title: 'Reporting & Dashboards',
+        description: ''
       },
       { 
-        id: 'support-interactive-3', 
-        label: 'Ateliers et démonstrations',
-        emoji: '🗣️',
-        title: 'Ateliers',
-        description: 'Ateliers et démonstrations'
+        id: 'digital-priority-3', 
+        label: 'Modernisation des outils et logiciels',
+        emoji: '💻',
+        icon: Monitor,
+        title: 'Modernisation',
+        description: ''
       },
       { 
-        id: 'support-interactive-4', 
-        label: 'Je préfère l\'info actuelle',
-        emoji: '❌',
-        title: 'Info actuelle',
-        description: 'Je préfère l\'info actuelle'
+        id: 'digital-priority-4', 
+        label: 'Support IT plus intelligent et proactif',
+        emoji: '🤖',
+        icon: Lightbulb,
+        title: 'Support intelligent',
+        description: ''
+      },
+      { 
+        id: 'digital-priority-5', 
+        label: 'RH / Paie / Congés',
+        emoji: '👥',
+        icon: Users,
+        title: 'RH / Paie / Congés',
+        description: ''
+      },
+      { 
+        id: 'digital-priority-6', 
+        label: 'Autre (champ texte libre)',
+        emoji: '🔧',
+        icon: Wrench,
+        title: 'Autre',
+        description: ''
       },
     ],
     required: true,
   },
 
-  // Question 15 - Information sur changements IT
+  // Question 15 - Encouragement à l'innovation
   {
     id: 15,
     type: 'choice',
-    question: 'Avez-vous l\'impression d\'être suffisamment informé(e) sur les changements IT impactant votre travail ?',
+    question: 'Selon vous, la DSI encourage-t-elle suffisamment l\'innovation dans vos pratiques ?',
     choices: [
       { 
-        id: 'info-changes-1', 
-        label: 'Je reçois toutes les infos nécessaires',
-        emoji: '✅',
-        title: 'Bien informé',
-        description: 'Je reçois toutes les infos nécessaires'
+        id: 'innovation-encourage-1', 
+        label: 'Des idées et solutions innovantes sont proposées régulièrement',
+        emoji: '💡',
+        icon: Lightbulb,
+        title: 'Innovation régulière',
+        description: ''
       },
       { 
-        id: 'info-changes-2', 
-        label: 'Quelques informations manquent parfois',
+        id: 'innovation-encourage-2', 
+        label: 'Quelques initiatives sont visibles',
         emoji: '🙂',
-        title: 'Presque complet',
-        description: 'Quelques informations manquent parfois'
+        icon: Smile,
+        title: 'Quelques initiatives',
+        description: ''
       },
       { 
-        id: 'info-changes-3', 
-        label: 'Informations partielles ou tardives',
-        emoji: '⚖️',
-        title: 'Partiel',
-        description: 'Informations partielles ou tardives'
+        id: 'innovation-encourage-3', 
+        label: 'Innovation limitée dans les pratiques quotidiennes',
+        emoji: '😐',
+        icon: Meh,
+        title: 'Innovation limitée',
+        description: ''
       },
       { 
-        id: 'info-changes-4', 
-        label: 'Beaucoup d\'informations manquantes',
-        emoji: '🙁',
-        title: 'Insuffisant',
-        description: 'Beaucoup d\'informations manquantes'
+        id: 'innovation-encourage-4', 
+        label: 'Pas d\'encouragement à l\'innovation',
+        emoji: '❌',
+        icon: XCircle,
+        title: 'Pas d\'encouragement',
+        description: ''
       },
     ],
     required: true,
   },
 
-  // Question 16 - Message libre pour l'équipe IT
+  // Question 16 - Communication DSI sur initiatives digitales
   {
     id: 16,
-    type: 'text',
-    question: 'Un message libre ou suggestion pour l\'équipe IT ?',
-    placeholder: 'Vos idées ou retours pour améliorer la communication...',
-    required: false,
+    type: 'choice',
+    question: 'Comment jugez-vous la communication de la DSI sur ses initiatives digitales et innovantes ?',
+    choices: [
+      { 
+        id: 'dsi-communication-1', 
+        label: 'Très claire et transparente',
+        emoji: '📢',
+        icon: Megaphone,
+        title: 'Très claire',
+        description: ''
+      },
+      { 
+        id: 'dsi-communication-2', 
+        label: 'Clair pour la plupart',
+        emoji: '🙂',
+        icon: Smile,
+        title: 'Clair',
+        description: ''
+      },
+      { 
+        id: 'dsi-communication-3', 
+        label: 'Moyenne',
+        emoji: '😐',
+        icon: Meh,
+        title: 'Moyenne',
+        description: ''
+      },
+      { 
+        id: 'dsi-communication-4', 
+        label: 'Pas claire du tout',
+        emoji: '❌',
+        icon: XCircle,
+        title: 'Pas claire',
+        description: ''
+      },
+    ],
+    required: true,
   },
 
   // ============================================
@@ -604,36 +759,41 @@ export const questions: Question[] = [
         id: 'cyber-skills-1', 
         label: 'Je détecte rapidement les risques et sais réagir efficacement',
         emoji: '🛡️',
+        icon: Shield,
         title: 'Expert',
-        description: 'Je détecte rapidement les risques et sais réagir efficacement'
+        description: ''
       },
       { 
         id: 'cyber-skills-2', 
         label: 'Je connais les bases et peux gérer la majorité des situations',
         emoji: '👍',
+        icon: ThumbsUp,
         title: 'Compétent',
-        description: 'Je connais les bases et peux gérer la majorité des situations'
+        description: ''
       },
       { 
         id: 'cyber-skills-3', 
         label: 'Je connais quelques notions mais reste prudent(e)',
         emoji: '⚖️',
+        icon: Balance,
         title: 'Prudent',
-        description: 'Je connais quelques notions mais reste prudent(e)'
+        description: ''
       },
       { 
         id: 'cyber-skills-4', 
         label: 'Je manque de connaissances pour agir efficacement',
         emoji: '⚠️',
+        icon: AlertTriangle,
         title: 'Limité',
-        description: 'Je manque de connaissances pour agir efficacement'
+        description: ''
       },
       { 
         id: 'cyber-skills-5', 
         label: 'Je ne me sens pas capable de détecter ni gérer les risques',
         emoji: '❌',
+        icon: XCircle,
         title: 'Incapable',
-        description: 'Je ne me sens pas capable de détecter ni gérer les risques'
+        description: ''
       },
     ],
     required: true,
@@ -649,137 +809,53 @@ export const questions: Question[] = [
         id: 'cyber-priority-1', 
         label: 'Renforcer la protection des données sensibles',
         emoji: '🔒',
+        icon: Lock,
         title: 'Protection données',
-        description: 'Renforcer la protection des données sensibles'
+        description: ''
       },
       { 
         id: 'cyber-priority-2', 
         label: 'Sécuriser les postes et logiciels',
         emoji: '💻',
+        icon: Laptop,
         title: 'Sécurisation postes',
-        description: 'Sécuriser les postes et logiciels'
+        description: ''
       },
       { 
         id: 'cyber-priority-3', 
         label: 'Former et sensibiliser les utilisateurs régulièrement',
         emoji: '📚',
+        icon: BookOpen,
         title: 'Formation',
-        description: 'Former et sensibiliser les utilisateurs régulièrement'
+        description: ''
       },
       { 
         id: 'cyber-priority-4', 
         label: 'Améliorer la communication et les alertes sécurité',
         emoji: '📢',
+        icon: Megaphone,
         title: 'Communication',
-        description: 'Améliorer la communication et les alertes sécurité'
+        description: ''
       },
       { 
         id: 'cyber-priority-5', 
-        label: 'Autre',
+        label: 'Autre (champ texte libre)',
         emoji: '🔧',
+        icon: Wrench,
         title: 'Autre',
-        description: 'Autre'
+        description: ''
       },
     ],
     required: true,
   },
 
   // ============================================
-  // SECTION 7: COMMUNICATION IT
+  // SECTION 7: CONNAISSANCE & PERCEPTION DE L'IA
   // ============================================
 
-  // Question 19 - Supports interactifs IT
+  // Question 19 - Ouverture aux outils IA
   {
     id: 19,
-    type: 'choice',
-    question: 'Souhaiteriez-vous plus de supports interactifs pour mieux comprendre les outils IT ?',
-    choices: [
-      { 
-        id: 'support-interactive-1', 
-        label: 'Vidéos courtes et tutos',
-        emoji: '🎥',
-        title: 'Vidéos',
-        description: 'Vidéos courtes et tutos'
-      },
-      { 
-        id: 'support-interactive-2', 
-        label: 'Guides et FAQ',
-        emoji: '📝',
-        title: 'Guides',
-        description: 'Guides et FAQ'
-      },
-      { 
-        id: 'support-interactive-3', 
-        label: 'Ateliers et démonstrations',
-        emoji: '🗣️',
-        title: 'Ateliers',
-        description: 'Ateliers et démonstrations'
-      },
-      { 
-        id: 'support-interactive-4', 
-        label: 'Je préfère l\'info actuelle',
-        emoji: '❌',
-        title: 'Info actuelle',
-        description: 'Je préfère l\'info actuelle'
-      },
-    ],
-    required: true,
-  },
-
-  // Question 20 - Information sur changements IT
-  {
-    id: 20,
-    type: 'choice',
-    question: 'Avez-vous l\'impression d\'être suffisamment informé(e) sur les changements IT impactant votre travail ?',
-    choices: [
-      { 
-        id: 'info-changes-1', 
-        label: 'Je reçois toutes les infos nécessaires',
-        emoji: '✅',
-        title: 'Bien informé',
-        description: 'Je reçois toutes les infos nécessaires'
-      },
-      { 
-        id: 'info-changes-2', 
-        label: 'Quelques informations manquent parfois',
-        emoji: '🙂',
-        title: 'Presque complet',
-        description: 'Quelques informations manquent parfois'
-      },
-      { 
-        id: 'info-changes-3', 
-        label: 'Informations partielles ou tardives',
-        emoji: '⚖️',
-        title: 'Partiel',
-        description: 'Informations partielles ou tardives'
-      },
-      { 
-        id: 'info-changes-4', 
-        label: 'Beaucoup d\'informations manquantes',
-        emoji: '🙁',
-        title: 'Insuffisant',
-        description: 'Beaucoup d\'informations manquantes'
-      },
-    ],
-    required: true,
-  },
-
-  // Question 21 - Message libre pour l'équipe IT
-  {
-    id: 21,
-    type: 'text',
-    question: 'Un message libre ou suggestion pour l\'équipe IT ?',
-    placeholder: 'Vos idées ou retours pour améliorer la communication...',
-    required: false,
-  },
-
-  // ============================================
-  // SECTION 8: CONNAISSANCE & PERCEPTION DE L'IA
-  // ============================================
-
-  // Question 22 - Ouverture aux outils IA
-  {
-    id: 22,
     type: 'choice',
     question: 'Seriez-vous ouvert(e) à l\'utilisation d\'outils IA dans votre travail si la DSI les mettait à disposition ?',
     choices: [
@@ -787,82 +863,91 @@ export const questions: Question[] = [
         id: 'ai-openness-1', 
         label: 'Oui, totalement',
         emoji: '😃',
+        icon: Smile,
         title: 'Oui, totalement',
-        description: 'Oui, totalement'
+        description: ''
       },
       { 
         id: 'ai-openness-2', 
         label: 'Oui, sous certaines conditions',
         emoji: '🙂',
+        icon: CheckCircle,
         title: 'Oui, sous conditions',
-        description: 'Oui, sous certaines conditions'
+        description: ''
       },
       { 
         id: 'ai-openness-3', 
         label: 'Peut-être',
         emoji: '🤷',
+        icon: HelpCircle,
         title: 'Peut-être',
-        description: 'Peut-être'
+        description: ''
       },
       { 
         id: 'ai-openness-4', 
         label: 'Peu',
         emoji: '😕',
+        icon: Frown,
         title: 'Peu',
-        description: 'Peu'
+        description: ''
       },
     ],
     required: true,
   },
 
-  // Question 23 - Rôle attendu de la direction IT concernant l'IA
+  // Question 20 - Rôle attendu du département IT concernant l'IA
   {
-    id: 23,
+    id: 20,
     type: 'multiple',
-    question: 'Quel rôle attendez-vous principalement du la direction IT concernant l\'IA ?',
+    question: 'Quel rôle attendez-vous principalement du département IT concernant l\'IA ?',
     choices: [
       { 
         id: 'ai-role-1', 
         label: 'Conseil & orientation',
         emoji: '💡',
+        icon: Lightbulb,
         title: 'Conseil & orientation',
-        description: 'Conseil & orientation'
+        description: ''
       },
       { 
         id: 'ai-role-2', 
         label: 'Sécurité & conformité',
         emoji: '🛡️',
+        icon: Shield,
         title: 'Sécurité & conformité',
-        description: 'Sécurité & conformité'
+        description: ''
       },
       { 
         id: 'ai-role-3', 
         label: 'Mise à disposition d\'outils',
         emoji: '🛠️',
+        icon: Wrench,
         title: 'Mise à disposition',
-        description: 'Mise à disposition d\'outils'
+        description: ''
       },
       { 
         id: 'ai-role-4', 
         label: 'Accompagnement des métiers',
         emoji: '👥',
+        icon: Users,
         title: 'Accompagnement',
-        description: 'Accompagnement des métiers'
+        description: ''
       },
       { 
         id: 'ai-role-5', 
         label: 'Définition des règles',
         emoji: '📋',
+        icon: FileTextIcon,
         title: 'Définition règles',
-        description: 'Définition des règles'
+        description: ''
       },
     ],
     required: true,
   },
 
-  // Question 24 - Prêtesse de l'entreprise pour l'IA
+  // Question 21 - Prêtesse de l'entreprise pour l'IA
   {
-    id: 24,
+    id: 21,
     type: 'choice',
     question: 'Pensez-vous que l\'entreprise est aujourd\'hui prête à intégrer l\'IA ?',
     choices: [
@@ -870,30 +955,33 @@ export const questions: Question[] = [
         id: 'ai-readiness-1', 
         label: 'Oui',
         emoji: '🟢',
+        icon: CheckCircle2,
         title: 'Oui',
-        description: 'Oui'
+        description: ''
       },
       { 
         id: 'ai-readiness-2', 
         label: 'Partiellement',
         emoji: '🟡',
+        icon: AlertCircle,
         title: 'Partiellement',
-        description: 'Partiellement'
+        description: ''
       },
       { 
         id: 'ai-readiness-3', 
         label: 'Non',
         emoji: '🔴',
+        icon: XCircle,
         title: 'Non',
-        description: 'Non'
+        description: ''
       },
     ],
     required: true,
   },
 
-  // Question 25 - Bénéfice principal de l'IA
+  // Question 22 - Bénéfice principal de l'IA
   {
-    id: 25,
+    id: 22,
     type: 'choice',
     question: 'Quel serait, selon vous, le principal bénéfice de l\'IA dans votre travail quotidien ?',
     choices: [
@@ -901,37 +989,41 @@ export const questions: Question[] = [
         id: 'ai-benefit-1', 
         label: 'Gain de temps',
         emoji: '⚡',
+        icon: Zap,
         title: 'Gain de temps',
-        description: 'Gain de temps'
+        description: ''
       },
       { 
         id: 'ai-benefit-2', 
         label: 'Simplification des tâches',
         emoji: '🔄',
+        icon: RefreshCw,
         title: 'Simplification',
-        description: 'Simplification des tâches'
+        description: ''
       },
       { 
         id: 'ai-benefit-3', 
         label: 'Aide à la décision',
         emoji: '🎯',
+        icon: Target,
         title: 'Aide décision',
-        description: 'Aide à la décision'
+        description: ''
       },
       { 
         id: 'ai-benefit-4', 
         label: 'Réduction des erreurs',
         emoji: '🛡️',
+        icon: Shield,
         title: 'Réduction erreurs',
-        description: 'Réduction des erreurs'
+        description: ''
       },
     ],
     required: true,
   },
 
-  // Question 26 - Type de projet IA prioritaire
+  // Question 23 - Type de projet IA prioritaire
   {
-    id: 26,
+    id: 23,
     type: 'choice',
     question: 'Quel type de projet IA devrait être lancé en premier selon vous ?',
     choices: [
@@ -939,40 +1031,141 @@ export const questions: Question[] = [
         id: 'ai-project-1', 
         label: 'Pilote simple',
         emoji: '🧪',
+        icon: FlaskConical,
         title: 'Pilote simple',
-        description: 'Pilote simple'
+        description: ''
       },
       { 
         id: 'ai-project-2', 
         label: 'Analyse & reporting',
         emoji: '📊',
+        icon: BarChart3,
         title: 'Analyse & reporting',
-        description: 'Analyse & reporting'
+        description: ''
       },
       { 
         id: 'ai-project-3', 
         label: 'Support aux utilisateurs',
         emoji: '💻',
+        icon: Laptop,
         title: 'Support utilisateurs',
-        description: 'Support aux utilisateurs'
+        description: ''
       },
       { 
         id: 'ai-project-4', 
         label: 'Automatisation de tâches',
         emoji: '🔁',
+        icon: Repeat,
         title: 'Automatisation',
-        description: 'Automatisation de tâches'
+        description: ''
       },
     ],
     required: true,
   },
 
-  // Question 27 - Message libre sur l'IA
+  // Question 24 - Message libre sur l'IA
   {
-    id: 27,
+    id: 24,
     type: 'text',
     question: 'Un message, une crainte ou une suggestion supplémentaire concernant l\'IA ?',
     placeholder: 'Votre message, crainte ou suggestion...',
+    required: false,
+  },
+
+  // ============================================
+  // SECTION 8: COMMUNICATION IT
+  // ============================================
+
+  // Question 25 - Supports interactifs IT
+  {
+    id: 25,
+    type: 'choice',
+    question: 'Souhaiteriez-vous plus de supports interactifs pour mieux comprendre les outils IT ?',
+    choices: [
+      { 
+        id: 'support-interactive-comm-1', 
+        label: 'Vidéos courtes et tutos',
+        emoji: '🎥',
+        icon: Video,
+        title: 'Vidéos',
+        description: ''
+      },
+      { 
+        id: 'support-interactive-comm-2', 
+        label: 'Guides et FAQ',
+        emoji: '📝',
+        icon: FileText,
+        title: 'Guides',
+        description: ''
+      },
+      { 
+        id: 'support-interactive-comm-3', 
+        label: 'Ateliers et démonstrations',
+        emoji: '🗣️',
+        icon: Users,
+        title: 'Ateliers',
+        description: ''
+      },
+      { 
+        id: 'support-interactive-comm-4', 
+        label: 'Je préfère l\'info actuelle',
+        emoji: '❌',
+        icon: XCircle,
+        title: 'Info actuelle',
+        description: ''
+      },
+    ],
+    required: true,
+  },
+
+  // Question 26 - Information sur changements IT
+  {
+    id: 26,
+    type: 'choice',
+    question: 'Avez-vous l\'impression d\'être suffisamment informé(e) sur les changements IT impactant votre travail ?',
+    choices: [
+      { 
+        id: 'info-changes-comm-1', 
+        label: 'Je reçois toutes les infos nécessaires',
+        emoji: '✅',
+        icon: CheckCircle2,
+        title: 'Bien informé',
+        description: ''
+      },
+      { 
+        id: 'info-changes-comm-2', 
+        label: 'Quelques informations manquent parfois',
+        emoji: '🙂',
+        icon: Smile,
+        title: 'Presque complet',
+        description: ''
+      },
+      { 
+        id: 'info-changes-comm-3', 
+        label: 'Informations partielles ou tardives',
+        emoji: '⚖️',
+        icon: Balance,
+        title: 'Partiel',
+        description: ''
+      },
+      { 
+        id: 'info-changes-comm-4', 
+        label: 'Beaucoup d\'informations manquantes',
+        emoji: '🙁',
+        icon: Frown,
+        title: 'Insuffisant',
+        description: ''
+      },
+    ],
+    required: true,
+  },
+
+  // Question 27 - Message libre pour l'équipe IT
+  {
+    id: 27,
+    type: 'text',
+    question: 'Un message libre ou suggestion pour l\'équipe IT ?',
+    placeholder: 'Vos idées ou retours pour améliorer la communication...',
     required: false,
   },
 ];

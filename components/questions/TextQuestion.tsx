@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { MessageSquare, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -35,7 +35,8 @@ export default function TextQuestion({
   const [isFocused, setIsFocused] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  const adjustHeight = (reset = false) => {
+  // Memoize adjustHeight to prevent recreation
+  const adjustHeight = useCallback((reset = false) => {
     if (textareaRef.current) {
       if (reset) {
         textareaRef.current.style.height = `${minHeight}px`;
@@ -46,7 +47,7 @@ export default function TextQuestion({
         textareaRef.current.style.height = `${newHeight}px`;
       }
     }
-  };
+  }, [minHeight, maxHeight]);
 
   useEffect(() => {
     adjustHeight();
@@ -62,24 +63,26 @@ export default function TextQuestion({
     }
   }, [autoFocus]);
 
-  // Calculate word count
-  const wordCount = inputValue.trim() === "" 
-    ? 0 
-    : inputValue.trim().split(/\s+/).length;
-  
-  const charCount = inputValue.length;
-  const remainingChars = maxLength ? maxLength - charCount : null;
+  // Memoize calculations to prevent unnecessary recalculations
+  const { wordCount, charCount, remainingChars } = useMemo(() => {
+    const wordCount = inputValue.trim() === "" 
+      ? 0 
+      : inputValue.trim().split(/\s+/).length;
+    const charCount = inputValue.length;
+    const remainingChars = maxLength ? maxLength - charCount : null;
+    return { wordCount, charCount, remainingChars };
+  }, [inputValue, maxLength]);
 
-  const handleSubmit = () => {
+  const handleSubmit = useCallback(() => {
     if (inputValue.trim()) {
       onContinue(inputValue);
       setInputValue("");
       adjustHeight(true);
     }
-  };
+  }, [inputValue, onContinue, adjustHeight]);
 
-  // Tips based on word count
-  const getTip = () => {
+  // Memoize tip calculation
+  const tip = useMemo(() => {
     if (wordCount === 0) {
       return "💡 Soyez spécifique et détaillé";
     } else if (wordCount < 10) {
@@ -89,7 +92,7 @@ export default function TextQuestion({
     } else {
       return "⭐ Excellent niveau de détail!";
     }
-  };
+  }, [wordCount]);
 
   const hasValue = inputValue.length > 0;
   const isLabelFloating = isFocused || hasValue;
@@ -200,21 +203,65 @@ export default function TextQuestion({
                 fontSize: isLabelFloating ? '0.75rem' : '1rem',
                 color: isFocused ? accentColor : '#6B7280',
               }}
+              transition={{
+                type: "spring",
+                stiffness: 300,
+                damping: 25,
+              }}
             >
-              <MessageSquare className={cn(
-                "transition-all duration-300",
-                isLabelFloating ? "w-3 h-3" : "w-4 h-4"
-              )} />
+              <motion.div
+                animate={isFocused ? {
+                  rotate: [0, -10, 10, 0],
+                } : {}}
+                transition={{
+                  duration: 0.5,
+                  ease: "easeInOut",
+                }}
+              >
+                <MessageSquare className={cn(
+                  "transition-all duration-300",
+                  isLabelFloating ? "w-3 h-3" : "w-4 h-4"
+                )} />
+              </motion.div>
               {placeholder}
             </motion.label>
 
             {/* Gradient overlay on focus */}
             <motion.div
-              className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"
+              className="absolute inset-0 pointer-events-none"
               style={{
                 background: `linear-gradient(135deg, ${accentColor}05, transparent)`,
               }}
+              animate={{
+                opacity: isFocused ? 1 : 0,
+              }}
+              transition={{
+                duration: 0.3,
+                ease: "easeOut",
+              }}
             />
+            
+            {/* Animated border glow on focus */}
+            {isFocused && (
+              <motion.div
+                className="absolute inset-0 rounded-2xl pointer-events-none"
+                style={{
+                  boxShadow: `0 0 0 3px ${accentColor}20`,
+                }}
+                animate={{
+                  boxShadow: [
+                    `0 0 0 3px ${accentColor}20`,
+                    `0 0 0 4px ${accentColor}30`,
+                    `0 0 0 3px ${accentColor}20`,
+                  ],
+                }}
+                transition={{
+                  duration: 2,
+                  repeat: Infinity,
+                  ease: "easeInOut",
+                }}
+              />
+            )}
 
             <div className="flex flex-col relative z-10 pt-8">
               <div
@@ -241,7 +288,13 @@ export default function TextQuestion({
                   maxLength={maxLength}
                   onChange={(e) => {
                     setInputValue(e.target.value);
-                    adjustHeight();
+                    // Use requestAnimationFrame for smoother height adjustment (performance optimization)
+                    requestAnimationFrame(() => {
+                      adjustHeight();
+                    });
+                  }}
+                  style={{
+                    willChange: 'contents',
                   }}
                   onFocus={() => setIsFocused(true)}
                   onBlur={() => setIsFocused(false)}
@@ -268,13 +321,14 @@ export default function TextQuestion({
                   <div className="flex items-center justify-between text-sm">
                     {/* Tip with icon */}
                     <motion.div 
-                      key={getTip()}
+                      key={tip}
                       initial={{ opacity: 0, x: -10 }}
                       animate={{ opacity: 1, x: 0 }}
                       className="flex items-center gap-2 text-gray-600 font-medium"
+                      style={{ willChange: 'transform, opacity' }}
                     >
                       <Sparkles className="w-4 h-4" style={{ color: accentColor }} />
-                      <span>{getTip()}</span>
+                      <span>{tip}</span>
                     </motion.div>
 
                     {/* Word and Character count */}

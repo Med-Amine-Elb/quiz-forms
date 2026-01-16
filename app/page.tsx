@@ -15,6 +15,7 @@ import { useToast, toastSuccess, toastError, toastInfo } from '@/hooks/useToast'
 import { questions } from '@/data/questions'
 import { preloadQuestionType } from '@/lib/preloadQuestionComponents'
 import { getSectionForQuestion } from '@/lib/questionSections'
+import { debounce } from '@/lib/utils'
 
 // Lazy load heavy components
 // const Avatar3D = dynamic(
@@ -148,9 +149,9 @@ export default function SurveyLanding() {
     }
   }, [emailVerified]);
 
-  // Save form data on input change (debounced)
+  // Save form data on input change (debounced for performance)
   useEffect(() => {
-    const handleInputChange = () => {
+    const handleInputChange = debounce(() => {
       if (typeof window !== 'undefined') {
         if (emailRef.current?.value) {
           localStorage.setItem('survey_email', emailRef.current.value);
@@ -162,7 +163,7 @@ export default function SurveyLanding() {
           localStorage.setItem('survey_prenom', prenomRef.current.value);
         }
       }
-    };
+    }, 300); // Debounce by 300ms
 
     const emailInput = emailRef.current;
     const nomInput = nomRef.current;
@@ -217,18 +218,38 @@ export default function SurveyLanding() {
   const submitAnswers = useCallback(async () => {
     setIsSubmitting(true);
     try {
+      // Remove duplicate answers (keep only the last answer for each questionId)
+      // This ensures if a user answered a question multiple times, only the latest answer is used
+      const uniqueAnswers = answers.reduce((acc: typeof answers, current) => {
+        const existingIndex = acc.findIndex(ans => ans.questionId === current.questionId);
+        if (existingIndex >= 0) {
+          // Replace existing answer with the newer one
+          acc[existingIndex] = current;
+        } else {
+          // Add new answer
+          acc.push(current);
+        }
+        return acc;
+      }, []);
+      
       // Enrich answers with question text and convert choice IDs to readable text
-      const enrichedAnswers = answers.map(ans => {
+      const enrichedAnswers = uniqueAnswers.map(ans => {
         const question = questions.find(q => q.id === ans.questionId);
         
         // Convert answer to readable text
         let readableAnswer = ans.answer;
         
-        // For choice questions, convert ID to label
+        // For choice questions, convert ID to label (handle "Autre" format: "choiceId|textValue")
         if (question?.type === 'choice' && question.choices && typeof ans.answer === 'string') {
-          const selectedChoice = question.choices.find(c => c.id === ans.answer);
+          const answerParts = ans.answer.split('|');
+          const choiceId = answerParts[0];
+          const customText = answerParts[1];
+          
+          const selectedChoice = question.choices.find(c => c.id === choiceId);
           if (selectedChoice) {
-            readableAnswer = selectedChoice.label;
+            readableAnswer = customText 
+              ? `${selectedChoice.label}: ${customText}`
+              : selectedChoice.label;
           }
         }
         
@@ -977,11 +998,15 @@ export default function SurveyLanding() {
     ? sectionBackgrounds[currentSection.id] || sectionBackgrounds.landing
     : sectionBackgrounds.landing;
 
+  // Check if current question is Q1
+  const isQ1 = showNextPage && currentQuestion?.id === 1;
+  
   return (
     <div 
-      className="w-full h-screen overflow-hidden relative" 
+      className={`w-full h-screen overflow-hidden relative ${!showNextPage || isQ1 ? 'no-scroll' : ''}`}
       style={{ 
         overflowX: 'hidden',
+        overflowY: (!showNextPage || isQ1) ? 'hidden' : 'auto',
       }}
     >
       {/* Animated Background Layer */}
@@ -1056,13 +1081,14 @@ export default function SurveyLanding() {
           zIndex: 2,
           willChange: 'transform',
           overflowX: 'hidden',
+          overflowY: 'hidden',
         }}
       >
       {/* Full Page Container - NO white background blocking shader */}
-      <div className="absolute inset-0 overflow-hidden pt-24">
+      <div className="absolute inset-0 overflow-hidden pt-24" style={{ overflowY: 'hidden', height: '100vh', maxHeight: '100vh' }}>
           
           {/* Content Grid */}
-          <div className="h-full grid grid-cols-1 lg:grid-cols-2 gap-8 px-6 md:px-12 pb-12">
+          <div className="h-full max-h-full grid grid-cols-1 lg:grid-cols-2 gap-6 px-6 md:px-12 pb-6" style={{ overflowY: 'hidden', maxHeight: 'calc(100vh - 6rem)' }}>
             
             {/* Left Side - Feedback Illustration */}
             <div ref={characterRef} className="flex items-center justify-center opacity-0 relative">
@@ -1210,7 +1236,7 @@ export default function SurveyLanding() {
             </div>
 
             {/* Right Side - Content */}
-            <div ref={ctaRef} className="flex flex-col justify-center opacity-0 space-y-6 md:space-y-8">
+            <div ref={ctaRef} className="flex flex-col justify-center opacity-0 space-y-6 md:space-y-8 overflow-hidden">
               
               {/* Slide Content */}
               <AnimatePresence mode="wait">

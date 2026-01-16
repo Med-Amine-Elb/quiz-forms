@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Check } from "lucide-react";
 import LoadingSpinner from "@/components/ui/loading-spinner";
@@ -29,7 +29,7 @@ export default function ContinueButton({
   const buttonRef = useRef<HTMLButtonElement>(null);
   const rippleIdRef = useRef(0);
 
-  const handleClick = (e: React.MouseEvent<HTMLButtonElement>) => {
+  const handleClick = useCallback((e: React.MouseEvent<HTMLButtonElement>) => {
     if (disabled || isLoading) return;
 
     // Create ripple effect
@@ -58,7 +58,7 @@ export default function ContinueButton({
         setShowSuccess(false);
       }, 500);
     }, 300);
-  };
+  }, [disabled, isLoading, onClick]);
 
   return (
     <motion.button
@@ -67,7 +67,7 @@ export default function ContinueButton({
       disabled={disabled || isLoading}
       className={cn(
         "relative w-full px-8 py-4 rounded-2xl text-white font-bold text-base sm:text-lg",
-        "shadow-lg transition-all duration-300 overflow-hidden",
+        "shadow-lg transition-all duration-300 overflow-hidden transform-gpu",
         "disabled:opacity-50 disabled:cursor-not-allowed font-inter",
         className
       )}
@@ -77,7 +77,8 @@ export default function ContinueButton({
           : `linear-gradient(135deg, ${accentColor}, ${accentColor}dd)`,
         boxShadow: disabled
           ? `0 10px 40px ${accentColor}20`
-          : `0 15px 50px ${accentColor}40, inset 0 1px 0 rgba(255,255,255,0.3)`,
+          : `0 15px 50px ${accentColor}40, 0 8px 24px rgba(0,0,0,0.12), inset 0 1px 0 rgba(255,255,255,0.3)`,
+        willChange: disabled ? 'auto' : 'transform',
       }}
       whileHover={!disabled ? { scale: 1.03, y: -2 } : {}}
       whileTap={!disabled ? { scale: 0.98 } : {}}

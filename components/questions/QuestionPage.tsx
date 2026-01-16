@@ -125,6 +125,7 @@ const QuestionPage = forwardRef<HTMLDivElement, QuestionPageProps>(({
           zIndex: 2,
           willChange: 'transform, opacity',
           overflowX: 'hidden',
+          overflowY: questionNumber === 1 ? 'hidden' : 'hidden',
           backfaceVisibility: 'hidden',
           WebkitBackfaceVisibility: 'hidden',
           backgroundColor: 'transparent',
@@ -187,11 +188,14 @@ const QuestionPage = forwardRef<HTMLDivElement, QuestionPageProps>(({
         <div 
           className={cn(
             "w-full lg:w-2/3 flex flex-col items-center lg:items-start justify-start px-2 lg:px-4 py-4 lg:py-6 relative z-20",
-            // Only allow scroll for specific questions that need it, not question 7
-            questionNumber === 7 ? "overflow-hidden" : "overflow-y-auto overflow-x-hidden"
+            // Hide scroll for Q1 and Q7, show scrollbar-hide for others
+            questionNumber === 1 || questionNumber === 7 
+              ? "overflow-hidden" 
+              : "overflow-y-auto overflow-x-hidden scrollbar-hide"
           )}
           style={{
             willChange: 'transform',
+            maxHeight: (questionNumber === 1 || questionNumber === 7) ? 'calc(100vh - 6rem)' : 'none',
           }}
         >
           {/* Animated Question Card - Consistent sizing for all questions */}

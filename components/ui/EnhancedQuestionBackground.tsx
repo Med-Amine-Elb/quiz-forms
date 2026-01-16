@@ -29,31 +29,49 @@ export default function EnhancedQuestionBackground({
 
   // Enhanced gradient backgrounds with richer colors
   const sectionBackgrounds = useMemo(() => ({
+    profil: 'linear-gradient(135deg, #dbeafe 0%, #93c5fd 25%, #60a5fa 50%, #3b82f6 75%, #094e86 100%)',
+    experience: 'linear-gradient(135deg, #d1fae5 0%, #6ee7b7 25%, #34d399 50%, #10b981 75%, #059669 100%)',
+    performance: 'linear-gradient(135deg, #ccfbf1 0%, #99f6e4 25%, #5eead4 50%, #2dd4bf 75%, #264653 100%)',
+    outils: 'linear-gradient(135deg, #f3e8ff 0%, #e9d5ff 25%, #ddd6fe 50%, #c4b5fd 75%, #a78bfa 100%)',
+    digitalisation: 'linear-gradient(135deg, #fdf2f8 0%, #fce7f3 25%, #fbcfe8 50%, #f9a8d4 75%, #ec4899 100%)',
+    securite: 'linear-gradient(135deg, #fef3c7 0%, #fde68a 25%, #fcd34d 50%, #fbbf24 75%, #f59e0b 100%)',
+    ia: 'linear-gradient(135deg, #cffafe 0%, #a5f3fc 25%, #67e8f9 50%, #22d3ee 75%, #06b6d4 100%)',
+    communication: 'linear-gradient(135deg, #fee2e2 0%, #fecaca 25%, #fca5a5 50%, #f87171 75%, #ef4444 100%)',
     informations: 'linear-gradient(135deg, #dbeafe 0%, #93c5fd 25%, #60a5fa 50%, #3b82f6 75%, #2563eb 100%)',
     support: 'linear-gradient(135deg, #d1fae5 0%, #6ee7b7 25%, #34d399 50%, #10b981 75%, #059669 100%)',
     innovation: 'linear-gradient(135deg, #f3e8ff 0%, #e9d5ff 25%, #ddd6fe 50%, #c4b5fd 75%, #a78bfa 100%)',
-    securite: 'linear-gradient(135deg, #fef3c7 0%, #fde68a 25%, #fcd34d 50%, #fbbf24 75%, #f59e0b 100%)',
-    communication: 'linear-gradient(135deg, #fee2e2 0%, #fecaca 25%, #fca5a5 50%, #f87171 75%, #ef4444 100%)',
     landing: 'linear-gradient(to bottom right, #ffffff 0%, #f9fafb 50%, #f3f4f6 100%)',
   }), [])
 
   // Glassmorphism colors (with opacity)
   const glassmorphismColors = useMemo(() => ({
+    profil: ['#094e8640', '#3b82f640', '#60a5fa40'],
+    experience: ['#10b98140', '#34d39940', '#6ee7b740'],
+    performance: ['#26465340', '#2dd4bf40', '#5eead440'],
+    outils: ['#a78bfa40', '#c4b5fd40', '#ddd6fe40'],
+    digitalisation: ['#ec489940', '#f472b640', '#f9a8d440'],
+    securite: ['#f59e0b40', '#fbbf2440', '#fcd34d40'],
+    ia: ['#06b6d440', '#22d3ee40', '#67e8f940'],
+    communication: ['#ef444440', '#f8717140', '#fca5a540'],
     informations: ['#3b82f640', '#60a5fa40', '#93c5fd40'],
     support: ['#10b98140', '#34d39940', '#6ee7b740'],
     innovation: ['#a78bfa40', '#c4b5fd40', '#ddd6fe40'],
-    securite: ['#f59e0b40', '#fbbf2440', '#fcd34d40'],
-    communication: ['#ef444440', '#f8717140', '#fca5a540'],
     landing: ['#ffffff20', '#f9fafb20', '#f3f4f620'],
   }), [])
 
   // Particle colors
   const particleColors = useMemo(() => ({
+    profil: ['#094e86', '#3b82f6', '#60a5fa'],
+    experience: ['#10b981', '#34d399', '#6ee7b7'],
+    performance: ['#264653', '#2dd4bf', '#5eead4'],
+    outils: ['#a78bfa', '#c4b5fd', '#ddd6fe'],
+    digitalisation: ['#ec4899', '#f472b6', '#f9a8d4'],
+    securite: ['#f59e0b', '#fbbf24', '#fcd34d'],
+    ia: ['#06b6d4', '#22d3ee', '#67e8f9'],
+    communication: ['#ef4444', '#f87171', '#fca5a5'],
     informations: ['#3b82f6', '#60a5fa', '#93c5fd'],
     support: ['#10b981', '#34d399', '#6ee7b7'],
     innovation: ['#a78bfa', '#c4b5fd', '#ddd6fe'],
-    securite: ['#f59e0b', '#fbbf24', '#fcd34d'],
-    communication: ['#ef4444', '#f87171', '#fca5a5'],
     landing: ['#6b7280', '#9ca3af', '#d1d5db'],
   }), [])
 

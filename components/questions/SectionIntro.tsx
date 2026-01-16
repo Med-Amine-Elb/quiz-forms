@@ -1,7 +1,7 @@
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";
-import { QuestionSection, questionSections } from "@/lib/questionSections";
+import { QuestionSection, questionSections, getSectionQuestionCount } from "@/lib/questionSections";
 import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
 
@@ -13,8 +13,8 @@ interface SectionIntroProps {
 export default function SectionIntro({ section, onClose }: SectionIntroProps) {
   const [isVisible, setIsVisible] = useState(true);
   const sectionIndex = questionSections.findIndex((s) => s.id === section.id) + 1;
-  // Calculate number of questions in this section
-  const questionsCount = section.endQuestion - section.startQuestion + 1;
+  // Calculate number of questions in this section using helper function
+  const questionsCount = getSectionQuestionCount(section);
   
   // Debug: Log questions count
   if (process.env.NODE_ENV !== 'production') {

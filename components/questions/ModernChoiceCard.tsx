@@ -4,12 +4,15 @@ import { motion } from "framer-motion";
 import { Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { LucideIcon } from "lucide-react";
+import { useState, useRef, useEffect } from "react";
 
 interface ModernChoiceCardProps {
   id: string;
   label: string;
   isSelected: boolean;
   onClick: () => void;
+  onHoverChange?: (isHovered: boolean) => void;
+  onTruncationChange?: (isTruncated: boolean) => void;
   index: number;
   accentColor?: string;
   icon?: LucideIcon;
@@ -17,6 +20,7 @@ interface ModernChoiceCardProps {
   emoji?: string;
   title?: string;
   description?: string;
+  disableAnimations?: boolean;
 }
 
 export default function ModernChoiceCard({
@@ -24,6 +28,8 @@ export default function ModernChoiceCard({
   label,
   isSelected,
   onClick,
+  onHoverChange,
+  onTruncationChange,
   index,
   accentColor = '#0EA5E9',
   icon: Icon,
@@ -31,102 +37,273 @@ export default function ModernChoiceCard({
   emoji,
   title,
   description,
+  disableAnimations = false,
 }: ModernChoiceCardProps) {
-  // Check if this is a two-line format (has title and description)
-  const isTwoLineFormat = title && description;
-  return (
-    <motion.button
-      onClick={onClick}
-      initial={{ opacity: 0, y: 20, scale: 0.96 }}
-      animate={{ opacity: 1, y: 0, scale: 1 }}
-      transition={{
-        duration: 0.5,
-        delay: index * 0.08,
-        ease: [0.16, 1, 0.3, 1],
-      }}
-      whileHover={{ 
-        scale: 1.02,
-        y: -4,
-        transition: { 
-          duration: 0.25,
-          ease: [0.16, 1, 0.3, 1],
-        },
-      }}
-      whileTap={{ 
-        scale: 0.98,
-        transition: { duration: 0.15 },
+  // Show full label instead of truncated title
+  const displayText = label;
+  
+  const buttonRef = useRef<HTMLButtonElement>(null);
+  const textRef = useRef<HTMLDivElement>(null);
+
+  const handleClick = (e: React.MouseEvent<HTMLButtonElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    if (!buttonRef.current) return;
+    
+    // Call onClick
+    onClick();
+  };
+
+  // Check for text truncation
+  useEffect(() => {
+    const checkTruncation = () => {
+      if (textRef.current && onTruncationChange) {
+        // Check if text is truncated by comparing scrollHeight with clientHeight
+        // For line-clamp, scrollHeight > clientHeight means text is truncated
+        const isOverflowing = textRef.current.scrollHeight > textRef.current.clientHeight;
+        onTruncationChange(isOverflowing);
+      }
+    };
+
+    // Check after a small delay to ensure DOM is ready
+    const timer = setTimeout(checkTruncation, 100);
+    // Recheck on resize
+    window.addEventListener('resize', checkTruncation);
+    
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener('resize', checkTruncation);
+    };
+  }, [onTruncationChange, label]);
+  
+  const buttonContent = (
+    <>
+      {/* Ripple effects removed - was causing blocking issues */}
+
+      {/* Glassmorphism background - simplified to prevent blocking */}
+      {isSelected && (
+        <div 
+          className="absolute inset-0 rounded-2xl pointer-events-none"
+          style={{
+            background: `linear-gradient(135deg, ${accentColor}20, ${accentColor}08)`,
+            opacity: 1,
+          }}
+        />
+      )}
+      
+      {/* Selected state gradient - static when animations disabled */}
+      {isSelected && (
+        disableAnimations ? (
+          <div
+            className="absolute inset-0 rounded-2xl pointer-events-none"
+            style={{
+              background: `linear-gradient(135deg, ${accentColor}20, ${accentColor}10)`,
+            }}
+          />
+        ) : (
+          <div
+            className="absolute inset-0 rounded-2xl pointer-events-none"
+            style={{
+              background: `linear-gradient(135deg, ${accentColor}20, ${accentColor}10)`,
+            }}
+          />
+        )
+      )}
+
+      {/* Animated border glow - static when animations disabled */}
+      {isSelected && (
+        <>
+          {disableAnimations ? (
+            <div
+              className="absolute inset-0 rounded-2xl pointer-events-none"
+              style={{
+                boxShadow: `0 0 0 2px ${accentColor}40, 0 0 20px ${accentColor}20`,
+              }}
+            />
+          ) : (
+            <div
+              className="absolute inset-0 rounded-2xl pointer-events-none"
+              style={{
+                boxShadow: `0 0 0 2px ${accentColor}40, 0 0 20px ${accentColor}20`,
+              }}
+            />
+          )}
+        </>
+      )}
+
+      {/* Content - Consistent Typography */}
+      <div className="relative flex items-center justify-between gap-4 z-10">
+        <div className="flex items-center gap-3 flex-1">
+          {/* Icon (prioritized) or Emoji with enhanced reactive animations */}
+          {Icon ? (
+            disableAnimations ? (
+              <div
+                className={cn(
+                  "flex-shrink-0 relative",
+                  "w-7 h-7 sm:w-8 sm:h-8"
+                )}
+                style={{ color: isSelected ? accentColor : '#4B5563' }}
+              >
+                <Icon className="w-full h-full" strokeWidth={isSelected ? 2.5 : 2} />
+              </div>
+            ) : (
+              <div
+                className={cn(
+                  "flex-shrink-0 relative",
+                  "w-7 h-7 sm:w-8 sm:h-8"
+                )}
+                style={{ 
+                  color: isSelected ? accentColor : '#4B5563',
+                  transform: isSelected ? 'scale(1.1)' : 'scale(1)',
+                  transition: 'transform 0.2s ease',
+                }}
+              >
+                <Icon className="w-full h-full" strokeWidth={isSelected ? 2.5 : 2} />
+              </div>
+            )
+          ) : emoji ? (
+            disableAnimations ? (
+              <div
+                className={cn(
+                  "flex-shrink-0 leading-none relative",
+                  "text-3xl sm:text-4xl"
+                )}
+              >
+                {emoji}
+              </div>
+            ) : (
+              <div
+                className={cn(
+                  "flex-shrink-0 leading-none relative",
+                  "text-3xl sm:text-4xl"
+                )}
+                style={{
+                  transform: isSelected ? 'scale(1.15)' : 'scale(1)',
+                  transition: 'transform 0.2s ease',
+                }}
+              >
+                {emoji}
+              </div>
+            )
+          ) : null}
+
+          {/* Text Content */}
+          <div ref={textRef} className="flex-1 min-w-0">
+            <div
+              className={cn(
+                "font-semibold text-base sm:text-lg leading-tight",
+                "line-clamp-2"
+              )}
+              style={{
+                color: isSelected ? '#111827' : '#1F2937',
+              }}
+            >
+              {displayText}
+            </div>
+          </div>
+        </div>
+
+        {/* Selection Indicator */}
+        {isSelected && (
+          <div className="flex-shrink-0 relative">
+            {disableAnimations ? (
+              <div
+                className="w-7 h-7 rounded-full flex items-center justify-center shadow-lg relative z-10"
+                style={{
+                  backgroundColor: accentColor,
+                  boxShadow: `0 4px 20px ${accentColor}50`,
+                }}
+              >
+                <Check className="w-4 h-4 text-white" strokeWidth={3} />
+              </div>
+            ) : (
+              <div className="flex-shrink-0 relative">
+                <div 
+                  className="w-7 h-7 rounded-full flex items-center justify-center shadow-lg relative z-10"
+                  style={{
+                    backgroundColor: accentColor,
+                    boxShadow: `0 4px 20px ${accentColor}50`,
+                  }}
+                >
+                  <Check className="w-4 h-4 text-white" strokeWidth={3} />
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* Shimmer effect removed - was causing blocking issues */}
+    </>
+  );
+
+  if (disableAnimations) {
+    return (
+      <button
+        ref={buttonRef}
+        onClick={handleClick}
+        onMouseEnter={() => {
+          onHoverChange?.(true);
+        }}
+      onMouseLeave={() => {
+        onHoverChange?.(false);
       }}
       style={{
         willChange: 'transform, opacity',
+        borderColor: isSelected ? accentColor : undefined,
+        boxShadow: isSelected 
+          ? `0 25px 60px ${accentColor}50, 0 8px 24px rgba(0,0,0,0.12), 0 0 0 2px ${accentColor}40, inset 0 1px 0 rgba(255,255,255,0.9), 0 0 40px ${accentColor}30` 
+          : '0 10px 32px rgba(0, 0, 0, 0.08), 0 4px 12px rgba(0,0,0,0.06)',
+        position: 'relative',
+        zIndex: 10,
+        pointerEvents: 'auto',
       }}
       className={cn(
         "relative w-full rounded-2xl text-left transition-all duration-300",
         "border-2 font-inter font-semibold",
         "focus:outline-none focus:ring-4 focus:ring-offset-2",
-        "group overflow-hidden",
+        "group overflow-hidden cursor-pointer",
         // Glassmorphism effect
         "backdrop-blur-xl",
-        // Larger for first question or two-line format
-        isFirstQuestion 
-          ? "px-8 py-6 text-lg sm:text-xl"
-          : isTwoLineFormat
-          ? "px-7 py-6 text-base sm:text-lg"
-          : "px-6 py-4 text-base sm:text-lg",
+        // 3D transform perspective
+        "transform-gpu",
+        // Unified sizing
+        "px-6 py-5 text-base sm:text-lg",
         // Bright theme with high contrast
         isSelected
-          ? "bg-white border-current shadow-2xl text-gray-900"
-          : "bg-white/80 border-gray-300 hover:bg-white hover:border-gray-400 text-gray-800 hover:shadow-2xl hover:-translate-y-1"
+          ? "bg-white border-current text-gray-900"
+          : "bg-white/90 border-gray-300 hover:bg-white hover:border-gray-400 text-gray-800"
       )}
-      style={{
-        borderColor: isSelected ? accentColor : undefined,
-        boxShadow: isSelected 
-          ? `0 20px 60px ${accentColor}50, 0 0 0 2px ${accentColor}40, inset 0 1px 0 rgba(255,255,255,0.8)` 
-          : '0 8px 32px rgba(0, 0, 0, 0.1)',
-      }}
     >
-      {/* Glassmorphism background with gradient */}
-      <div 
-        className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"
-        style={{
-          background: `linear-gradient(135deg, ${accentColor}15, ${accentColor}05)`,
-        }}
-      />
       
-      {/* Selected state gradient */}
+      {/* Glassmorphism background - simplified to prevent blocking */}
       {isSelected && (
-        <motion.div
-          layoutId={`selected-${id}`}
-          className="absolute inset-0 rounded-2xl"
+        <div 
+          className="absolute inset-0 rounded-2xl pointer-events-none"
+          style={{
+            background: `linear-gradient(135deg, ${accentColor}20, ${accentColor}08)`,
+            opacity: 1,
+          }}
+        />
+      )}
+      
+      {/* Selected state gradient - removed layoutId animation that was blocking */}
+      {isSelected && (
+        <div
+          className="absolute inset-0 rounded-2xl pointer-events-none"
           style={{
             background: `linear-gradient(135deg, ${accentColor}20, ${accentColor}10)`,
-          }}
-          initial={false}
-          transition={{
-            type: "spring",
-            stiffness: 500,
-            damping: 30,
           }}
         />
       )}
 
-      {/* Animated border glow on selection */}
+      {/* Static border glow on selection - removed animations that were blocking */}
       {isSelected && (
-        <motion.div
-          className="absolute inset-0 rounded-2xl"
+        <div
+          className="absolute inset-0 rounded-2xl pointer-events-none"
           style={{
             boxShadow: `0 0 0 2px ${accentColor}40, 0 0 20px ${accentColor}20`,
-          }}
-          animate={{
-            boxShadow: [
-              `0 0 0 2px ${accentColor}40, 0 0 20px ${accentColor}20`,
-              `0 0 0 3px ${accentColor}30, 0 0 30px ${accentColor}15`,
-              `0 0 0 2px ${accentColor}40, 0 0 20px ${accentColor}20`,
-            ],
-          }}
-          transition={{
-            duration: 2,
-            repeat: Infinity,
-            ease: 'easeInOut',
           }}
         />
       )}
@@ -134,88 +311,240 @@ export default function ModernChoiceCard({
       {/* Content - Consistent Typography */}
       <div className="relative flex items-center justify-between gap-4 z-10">
         <div className="flex items-center gap-3 flex-1">
-          {/* Emoji or Icon */}
-          {emoji ? (
+          {/* Icon (prioritized) or Emoji with enhanced reactive animations */}
+          {Icon ? (
             <motion.div
-              animate={isSelected ? { scale: [1, 1.2, 1], rotate: [0, 10, -10, 0] } : {}}
-              transition={{ duration: 0.5 }}
+              animate={isSelected ? { 
+                scale: [1, 1.4, 1.15], 
+                rotate: [0, 20, -20, 0],
+                y: [0, -5, 0],
+                x: [0, 2, -2, 0],
+              } : {
+                scale: 1,
+                rotate: 0,
+                y: 0,
+                x: 0,
+              }}
+              transition={{ 
+                duration: 0.8,
+                ease: [0.16, 1, 0.3, 1],
+                repeat: isSelected ? Infinity : 0,
+                repeatDelay: 2,
+              }}
+              whileHover={!isSelected ? {
+                scale: 1.2,
+                rotate: [0, 8, -8, 0],
+                y: -2,
+                transition: { 
+                  duration: 0.4,
+                  ease: [0.16, 1, 0.3, 1]
+                }
+              } : {
+                scale: 1.15,
+                rotate: [0, 10, -10, 0],
+                transition: { 
+                  duration: 0.3,
+                  ease: [0.16, 1, 0.3, 1]
+                }
+              }}
               className={cn(
-                "flex-shrink-0 leading-none",
-                isFirstQuestion ? "text-4xl" : isTwoLineFormat ? "text-4xl" : "text-3xl"
-              )}
-            >
-              {emoji}
-            </motion.div>
-          ) : Icon && (
-            <motion.div
-              animate={isSelected ? { scale: [1, 1.2, 1], rotate: [0, 10, -10, 0] } : {}}
-              transition={{ duration: 0.5 }}
-              className={cn(
-                "flex-shrink-0",
-                isFirstQuestion ? "w-8 h-8" : "w-6 h-6"
+                "flex-shrink-0 relative",
+                "w-7 h-7 sm:w-8 sm:h-8"
               )}
               style={{ color: isSelected ? accentColor : '#4B5563' }}
             >
-              <Icon className="w-full h-full" />
+              <Icon className="w-full h-full" strokeWidth={isSelected ? 2.5 : 2} />
+              {isSelected && (
+                <motion.div
+                  className="absolute inset-0 rounded-full"
+                  style={{
+                    background: `radial-gradient(circle, ${accentColor}20, transparent 70%)`,
+                  }}
+                  animate={{
+                    scale: [1, 1.5, 1],
+                    opacity: [0.5, 0.8, 0.5],
+                  }}
+                  transition={{
+                    duration: 2,
+                    repeat: Infinity,
+                    ease: 'easeInOut',
+                  }}
+                />
+              )}
             </motion.div>
-          )}
+          ) : emoji ? (
+            <motion.div
+              animate={isSelected ? { 
+                scale: [1, 1.4, 1.15], 
+                rotate: [0, 20, -20, 0],
+                y: [0, -8, 0],
+                x: [0, 3, -3, 0],
+              } : {
+                scale: 1,
+                rotate: 0,
+                y: 0,
+                x: 0,
+              }}
+              transition={{ 
+                duration: 0.8,
+                ease: [0.16, 1, 0.3, 1],
+                repeat: isSelected ? Infinity : 0,
+                repeatDelay: 2,
+              }}
+              whileHover={!isSelected ? {
+                scale: 1.25,
+                rotate: [0, 10, -10, 0],
+                y: -3,
+                transition: { 
+                  duration: 0.4,
+                  ease: [0.16, 1, 0.3, 1]
+                }
+              } : {
+                scale: 1.2,
+                rotate: [0, 12, -12, 0],
+                transition: { 
+                  duration: 0.3,
+                  ease: [0.16, 1, 0.3, 1]
+                }
+              }}
+              className={cn(
+                "flex-shrink-0 leading-none relative",
+                "text-3xl sm:text-4xl"
+              )}
+            >
+              {emoji}
+              {isSelected && (
+                <motion.div
+                  className="absolute inset-0 rounded-full -z-10"
+                  style={{
+                    background: `radial-gradient(circle, ${accentColor}15, transparent 70%)`,
+                  }}
+                  animate={{
+                    scale: [1, 1.8, 1],
+                    opacity: [0.4, 0.7, 0.4],
+                  }}
+                  transition={{
+                    duration: 2,
+                    repeat: Infinity,
+                    ease: 'easeInOut',
+                  }}
+                />
+              )}
+            </motion.div>
+          ) : null}
           
-          {/* Two-line format (title + description) or single line */}
-          {isTwoLineFormat ? (
-            <div className="flex-1 space-y-2">
-              <div className={cn(
+          {/* Full text display - allow wrapping for longer labels */}
+          <motion.div 
+            className="flex-1 min-w-0"
+            animate={isSelected ? {
+              x: [0, 3, -3, 0],
+            } : {}}
+            transition={{
+              duration: 0.6,
+              ease: [0.16, 1, 0.3, 1],
+            }}
+          >
+            <motion.div 
+              ref={textRef}
+              className={cn(
                 "font-extrabold leading-tight",
-                isFirstQuestion ? "text-xl sm:text-2xl" : "text-lg sm:text-xl",
-                isSelected ? "text-gray-900" : "text-gray-800 group-hover:text-gray-900"
-              )}>
-                {title}
-              </div>
-              <div className={cn(
-                "text-sm sm:text-base leading-relaxed font-medium",
-                isSelected ? "text-gray-700" : "text-gray-600 group-hover:text-gray-700"
-              )}>
-                {description}
-              </div>
-            </div>
-          ) : (
-            <span className={cn(
-              "flex-1",
-              isFirstQuestion ? "text-lg sm:text-xl" : "text-base sm:text-lg",
-              isSelected ? "text-gray-900 font-extrabold" : "text-gray-800 font-semibold group-hover:text-gray-900 group-hover:font-bold"
-            )}>
-              {label}
-            </span>
-          )}
+                "text-base sm:text-lg",
+                isSelected ? "text-gray-900" : "text-gray-800 group-hover:text-gray-900",
+                // Allow text to wrap if it's too long, but prefer single line
+                "line-clamp-2"
+              )}
+              animate={isSelected ? {
+                scale: [1, 1.02, 1],
+              } : {}}
+              transition={{
+                duration: 0.5,
+                ease: [0.16, 1, 0.3, 1],
+              }}
+            >
+              {displayText}
+            </motion.div>
+          </motion.div>
         </div>
         
-        {/* Check icon with section color */}
+        {/* Check icon with enhanced reactive animations */}
         {isSelected && (
           <motion.div
-            initial={{ scale: 0, rotate: -180 }}
-            animate={{ scale: 1, rotate: 0 }}
+            initial={{ scale: 0, rotate: -180, opacity: 0 }}
+            animate={{ 
+              scale: 1, 
+              rotate: 0,
+              opacity: 1,
+            }}
             transition={{
               type: "spring",
-              stiffness: 500,
-              damping: 25,
+              stiffness: 700,
+              damping: 18,
             }}
-            className="flex-shrink-0"
+            whileHover={{
+              scale: 1.15,
+              rotate: [0, 10, -10, 0],
+              transition: {
+                duration: 0.4,
+                ease: [0.16, 1, 0.3, 1],
+              }
+            }}
+            className="flex-shrink-0 relative"
           >
-            <div 
-              className="w-7 h-7 rounded-full flex items-center justify-center shadow-lg"
+            <motion.div 
+              className="w-7 h-7 rounded-full flex items-center justify-center shadow-lg relative z-10"
               style={{
                 backgroundColor: accentColor,
                 boxShadow: `0 4px 20px ${accentColor}50`,
               }}
+              animate={{
+                boxShadow: [
+                  `0 4px 20px ${accentColor}50`,
+                  `0 6px 30px ${accentColor}70`,
+                  `0 4px 20px ${accentColor}50`,
+                ],
+              }}
+              transition={{
+                duration: 2,
+                repeat: Infinity,
+                ease: 'easeInOut',
+              }}
             >
-              <Check className="w-4 h-4 text-white" strokeWidth={3} />
-            </div>
+              <motion.div
+                animate={{
+                  scale: [1, 1.2, 1],
+                  rotate: [0, 5, -5, 0],
+                }}
+                transition={{
+                  duration: 1.5,
+                  repeat: Infinity,
+                  ease: 'easeInOut',
+                }}
+              >
+                <Check className="w-4 h-4 text-white" strokeWidth={3} />
+              </motion.div>
+            </motion.div>
+            <motion.div
+              className="absolute inset-0 rounded-full pointer-events-none"
+              style={{
+                background: `radial-gradient(circle, ${accentColor}40, transparent 70%)`,
+              }}
+              animate={{
+                scale: [1, 1.8, 1],
+                opacity: [0.6, 0, 0.6],
+              }}
+              transition={{
+                duration: 2,
+                repeat: Infinity,
+                ease: 'easeOut',
+              }}
+            />
           </motion.div>
         )}
       </div>
 
-      {/* Shimmer effect on hover */}
+      {/* Enhanced shimmer effect on hover with multiple passes */}
       <motion.div
-        className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent"
+        className="absolute inset-0 bg-gradient-to-r from-transparent via-white/60 to-transparent pointer-events-none"
         initial={{ x: '-100%' }}
         whileHover={{ x: '100%' }}
         transition={{
@@ -223,6 +552,200 @@ export default function ModernChoiceCard({
           ease: 'easeInOut',
         }}
       />
+      {!isSelected && (
+        <motion.div
+          className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent pointer-events-none"
+          animate={{
+            x: ['-100%', '200%'],
+          }}
+          transition={{
+            duration: 3,
+            repeat: Infinity,
+            repeatDelay: 1,
+            ease: 'easeInOut',
+          }}
+        />
+      )}
+      
+      {/* Glow effect on hover */}
+      <motion.div
+        className="absolute inset-0 rounded-2xl pointer-events-none opacity-0"
+        style={{
+          background: `radial-gradient(circle at center, ${accentColor}15, transparent 70%)`,
+        }}
+        whileHover={{
+          opacity: 1,
+        }}
+        transition={{
+          duration: 0.3,
+        }}
+      />
+      
+      {/* Enhanced pulse animation on selection with multiple layers */}
+      {isSelected && (
+        <>
+          <motion.div
+            className="absolute inset-0 rounded-2xl"
+            style={{
+              background: `radial-gradient(circle at center, ${accentColor}20, transparent 70%)`,
+            }}
+            animate={{
+              opacity: [0.6, 0.9, 0.6],
+              scale: [1, 1.08, 1],
+            }}
+            transition={{
+              duration: 2,
+              repeat: Infinity,
+              ease: 'easeInOut',
+            }}
+          />
+          <motion.div
+            className="absolute inset-0 rounded-2xl"
+            style={{
+              background: `radial-gradient(circle at 30% 30%, ${accentColor}15, transparent 50%)`,
+            }}
+            animate={{
+              opacity: [0.4, 0.7, 0.4],
+              scale: [1, 1.12, 1],
+            }}
+            transition={{
+              duration: 2.5,
+              repeat: Infinity,
+              ease: 'easeInOut',
+              delay: 0.5,
+            }}
+          />
+        </>
+      )}
+      
+      {/* Animated particles on selection - Enhanced */}
+      {isSelected && (
+        <>
+          {/* Floating particles */}
+          {[...Array(6)].map((_, i) => (
+            <motion.div
+              key={`particle-${i}`}
+              className="absolute rounded-full"
+              style={{
+                width: 6,
+                height: 6,
+                background: accentColor,
+                left: `${15 + (i % 3) * 35}%`,
+                top: `${15 + Math.floor(i / 3) * 40}%`,
+              }}
+              animate={{
+                y: [0, -30, -60],
+                x: [(i % 2) * 10 - 5, (i % 2) * 20 - 10, (i % 2) * 15 - 7.5],
+                opacity: [0, 1, 0.8, 0],
+                scale: [0, 1.2, 0.8, 0],
+              }}
+              transition={{
+                duration: 2.5,
+                repeat: Infinity,
+                delay: i * 0.2,
+                ease: 'easeOut',
+              }}
+            />
+          ))}
+          
+          {/* Celebration burst removed - was causing blocking */}
+          {false && (
+            <>
+              {[...Array(12)].map((_, i) => (
+                <motion.div
+                  key={`burst-${i}`}
+                  className="absolute rounded-full"
+                  style={{
+                    width: 8,
+                    height: 8,
+                    background: accentColor,
+                    left: '50%',
+                    top: '50%',
+                  }}
+                  initial={{
+                    x: 0,
+                    y: 0,
+                    scale: 0,
+                    opacity: 1,
+                  }}
+                  animate={{
+                    x: Math.cos((i * 30) * Math.PI / 180) * 60,
+                    y: Math.sin((i * 30) * Math.PI / 180) * 60,
+                    scale: [0, 1, 0],
+                    opacity: [1, 1, 0],
+                  }}
+                  transition={{
+                    duration: 0.8,
+                    ease: "easeOut",
+                  }}
+                />
+              ))}
+            </>
+          )}
+        </>
+      )}
+      </button>
+    );
+  }
+
+  return (
+    <motion.button
+      ref={buttonRef}
+      onClick={handleClick}
+      onMouseEnter={() => {
+        onHoverChange?.(true);
+      }}
+      onMouseLeave={() => {
+        onHoverChange?.(false);
+      }}
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ 
+        opacity: 1, 
+        y: 0,
+      }}
+      transition={{
+        duration: 0.3,
+        delay: index * 0.03,
+        ease: [0.16, 1, 0.3, 1],
+      }}
+      whileHover={{ 
+        scale: 1.02,
+        y: -4,
+        transition: { 
+          duration: 0.2,
+          ease: [0.16, 1, 0.3, 1],
+        },
+      }}
+      whileTap={{ 
+        scale: 0.98,
+        transition: { 
+          duration: 0.1,
+        },
+      }}
+      style={{
+        willChange: 'transform, opacity',
+        borderColor: isSelected ? accentColor : undefined,
+        boxShadow: isSelected 
+          ? `0 25px 60px ${accentColor}50, 0 8px 24px rgba(0,0,0,0.12), 0 0 0 2px ${accentColor}40, inset 0 1px 0 rgba(255,255,255,0.9), 0 0 40px ${accentColor}30` 
+          : '0 10px 32px rgba(0, 0, 0, 0.08), 0 4px 12px rgba(0,0,0,0.06)',
+        position: 'relative',
+        zIndex: 10,
+        pointerEvents: 'auto',
+      }}
+      className={cn(
+        "relative w-full rounded-2xl text-left transition-all duration-300",
+        "border-2 font-inter font-semibold",
+        "focus:outline-none focus:ring-4 focus:ring-offset-2",
+        "group overflow-hidden cursor-pointer",
+        "backdrop-blur-xl",
+        "transform-gpu",
+        "px-6 py-5 text-base sm:text-lg",
+        isSelected
+          ? "bg-white border-current text-gray-900"
+          : "bg-white/90 border-gray-300 hover:bg-white hover:border-gray-400 text-gray-800"
+      )}
+    >
+      {buttonContent}
     </motion.button>
   );
 }
