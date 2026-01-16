@@ -1,6 +1,6 @@
 "use client";
 
-import { motion } from "framer-motion";
+import { motion, useMotionValue, useSpring, useTransform } from "framer-motion";
 import { Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { LucideIcon } from "lucide-react";
@@ -44,12 +44,49 @@ export default function ModernChoiceCard({
   
   const buttonRef = useRef<HTMLButtonElement>(null);
   const textRef = useRef<HTMLDivElement>(null);
+  const [ripples, setRipples] = useState<Array<{ x: number; y: number; id: number }>>([]);
+
+  // Magnetic hover effect
+  const x = useMotionValue(0);
+  const y = useMotionValue(0);
+  const springConfig = { damping: 25, stiffness: 300 };
+  const xSpring = useSpring(x, springConfig);
+  const ySpring = useSpring(y, springConfig);
+  
+  const handleMouseMove = (e: React.MouseEvent<HTMLButtonElement>) => {
+    if (!buttonRef.current || isSelected || disableAnimations) return;
+    const rect = buttonRef.current.getBoundingClientRect();
+    const centerX = rect.left + rect.width / 2;
+    const centerY = rect.top + rect.height / 2;
+    const distanceX = (e.clientX - centerX) * 0.15;
+    const distanceY = (e.clientY - centerY) * 0.15;
+    x.set(distanceX);
+    y.set(distanceY);
+  };
+  
+  const handleMouseLeave = () => {
+    if (disableAnimations) return;
+    x.set(0);
+    y.set(0);
+  };
 
   const handleClick = (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
     e.stopPropagation();
     
     if (!buttonRef.current) return;
+    
+    // Create simple ripple effect
+    if (!disableAnimations) {
+      const rect = buttonRef.current.getBoundingClientRect();
+      const clickX = e.clientX - rect.left;
+      const clickY = e.clientY - rect.top;
+      const newRipple = { x: clickX, y: clickY, id: Date.now() };
+      setRipples((prev) => [...prev, newRipple]);
+      setTimeout(() => {
+        setRipples((prev) => prev.filter((r) => r.id !== newRipple.id));
+      }, 600);
+    }
     
     // Call onClick
     onClick();
@@ -79,7 +116,27 @@ export default function ModernChoiceCard({
   
   const buttonContent = (
     <>
-      {/* Ripple effects removed - was causing blocking issues */}
+      {/* Simple ripple effect on click */}
+      {!disableAnimations && ripples.map((ripple) => (
+        <motion.div
+          key={ripple.id}
+          className="absolute rounded-full pointer-events-none"
+          style={{
+            left: ripple.x,
+            top: ripple.y,
+            width: 20,
+            height: 20,
+            background: `radial-gradient(circle, ${accentColor}40, transparent 70%)`,
+            transform: 'translate(-50%, -50%)',
+          }}
+          initial={{ scale: 0, opacity: 0.8 }}
+          animate={{ scale: 8, opacity: 0 }}
+          transition={{
+            duration: 0.6,
+            ease: 'easeOut',
+          }}
+        />
+      ))}
 
       {/* Glassmorphism background - simplified to prevent blocking */}
       {isSelected && (
@@ -122,10 +179,22 @@ export default function ModernChoiceCard({
               }}
             />
           ) : (
-            <div
+            <motion.div
               className="absolute inset-0 rounded-2xl pointer-events-none"
               style={{
                 boxShadow: `0 0 0 2px ${accentColor}40, 0 0 20px ${accentColor}20`,
+              }}
+              animate={{
+                boxShadow: [
+                  `0 0 0 2px ${accentColor}40, 0 0 20px ${accentColor}20`,
+                  `0 0 0 2px ${accentColor}50, 0 0 25px ${accentColor}30`,
+                  `0 0 0 2px ${accentColor}40, 0 0 20px ${accentColor}20`,
+                ],
+              }}
+              transition={{
+                duration: 3,
+                repeat: Infinity,
+                ease: 'easeInOut',
               }}
             />
           )}
@@ -216,23 +285,47 @@ export default function ModernChoiceCard({
                 <Check className="w-4 h-4 text-white" strokeWidth={3} />
               </div>
             ) : (
-              <div className="flex-shrink-0 relative">
-                <div 
+              <motion.div 
+                className="flex-shrink-0 relative"
+                initial={false}
+                animate={{ scale: [1, 1.1, 1] }}
+                transition={{ 
+                  duration: 0.5,
+                  ease: 'easeOut',
+                  repeat: 1,
+                  repeatDelay: 1
+                }}
+              >
+                <motion.div 
                   className="w-7 h-7 rounded-full flex items-center justify-center shadow-lg relative z-10"
                   style={{
                     backgroundColor: accentColor,
                     boxShadow: `0 4px 20px ${accentColor}50`,
                   }}
+                  whileHover={{ scale: 1.1 }}
+                  transition={{ duration: 0.2 }}
                 >
                   <Check className="w-4 h-4 text-white" strokeWidth={3} />
-                </div>
-              </div>
+                </motion.div>
+              </motion.div>
             )}
           </div>
         )}
       </div>
 
-      {/* Shimmer effect removed - was causing blocking issues */}
+      {/* Shimmer effect on hover - single pass only */}
+      {!disableAnimations && (
+        <motion.div
+          className="absolute inset-0 bg-gradient-to-r from-transparent via-white/50 to-transparent pointer-events-none"
+          initial={{ x: '-100%' }}
+          whileHover={{ x: '200%' }}
+          transition={{
+            duration: 0.6,
+            ease: 'easeInOut',
+          }}
+          style={{ pointerEvents: 'none' }}
+        />
+      )}
     </>
   );
 
@@ -693,8 +786,10 @@ export default function ModernChoiceCard({
       onMouseEnter={() => {
         onHoverChange?.(true);
       }}
+      onMouseMove={handleMouseMove}
       onMouseLeave={() => {
         onHoverChange?.(false);
+        handleMouseLeave();
       }}
       initial={{ opacity: 0, y: 10 }}
       animate={{ 
@@ -729,6 +824,8 @@ export default function ModernChoiceCard({
         position: 'relative',
         zIndex: 10,
         pointerEvents: 'auto',
+        x: disableAnimations ? undefined : xSpring,
+        y: disableAnimations ? undefined : ySpring,
       }}
       className={cn(
         "relative w-full rounded-2xl text-left transition-all duration-300",
