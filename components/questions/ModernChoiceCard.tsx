@@ -148,19 +148,18 @@ export default function ModernChoiceCard({
                 <Icon className="w-full h-full" strokeWidth={isSelected ? 2.5 : 2} />
               </div>
             ) : (
-              <div
+              <motion.div
                 className={cn(
                   "flex-shrink-0 relative",
                   "w-7 h-7 sm:w-8 sm:h-8"
                 )}
-                style={{ 
-                  color: isSelected ? accentColor : '#4B5563',
-                  transform: isSelected ? 'scale(1.1)' : 'scale(1)',
-                  transition: 'transform 0.2s ease',
-                }}
+                style={{ color: isSelected ? accentColor : '#4B5563' }}
+                animate={isSelected ? { scale: 1.1 } : { scale: 1 }}
+                whileHover={!isSelected ? { scale: 1.15 } : { scale: 1.1 }}
+                transition={{ duration: 0.2, ease: 'easeOut' }}
               >
                 <Icon className="w-full h-full" strokeWidth={isSelected ? 2.5 : 2} />
-              </div>
+              </motion.div>
             )
           ) : emoji ? (
             disableAnimations ? (
@@ -173,18 +172,17 @@ export default function ModernChoiceCard({
                 {emoji}
               </div>
             ) : (
-              <div
+              <motion.div
                 className={cn(
                   "flex-shrink-0 leading-none relative",
                   "text-3xl sm:text-4xl"
                 )}
-                style={{
-                  transform: isSelected ? 'scale(1.15)' : 'scale(1)',
-                  transition: 'transform 0.2s ease',
-                }}
+                animate={isSelected ? { scale: 1.15 } : { scale: 1 }}
+                whileHover={!isSelected ? { scale: 1.2 } : { scale: 1.15 }}
+                transition={{ duration: 0.2, ease: 'easeOut' }}
               >
                 {emoji}
-              </div>
+              </motion.div>
             )
           ) : null}
 
