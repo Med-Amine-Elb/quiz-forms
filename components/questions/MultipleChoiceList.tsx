@@ -141,6 +141,7 @@ export default function MultipleChoiceList({
             title={choice.title}
             description={choice.description}
             disableAnimations={disableAnimations}
+            questionId={questionId}
           />
         ))}
       </ListWrapper>

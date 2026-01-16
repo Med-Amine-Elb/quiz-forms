@@ -20,6 +20,7 @@ interface ModernChoiceListProps {
   selectedId?: string | null;
   accentColor?: string;
   isFirstQuestion?: boolean;
+  questionId?: number;
 }
 
 export default function ModernChoiceList({
@@ -28,6 +29,7 @@ export default function ModernChoiceList({
   selectedId,
   accentColor,
   isFirstQuestion = false,
+  questionId,
 }: ModernChoiceListProps) {
   // Stack vertically for 3 or fewer choices
   const isVerticalLayout = choices.length <= 3;
@@ -119,6 +121,7 @@ export default function ModernChoiceList({
               emoji={choice.emoji}
               title={choice.title}
               description={choice.description}
+              questionId={questionId}
             />
           </motion.div>
         ))}

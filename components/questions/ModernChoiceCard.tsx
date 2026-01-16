@@ -21,6 +21,7 @@ interface ModernChoiceCardProps {
   title?: string;
   description?: string;
   disableAnimations?: boolean;
+  questionId?: number;
 }
 
 export default function ModernChoiceCard({
@@ -38,7 +39,10 @@ export default function ModernChoiceCard({
   title,
   description,
   disableAnimations = false,
+  questionId,
 }: ModernChoiceCardProps) {
+  // Only show rotating gradient and particles for questions 14, 15, 16
+  const showSpecialAnimations = questionId === 14 || questionId === 15 || questionId === 16;
   // Show full label instead of truncated title
   const displayText = label;
   
@@ -149,23 +153,34 @@ export default function ModernChoiceCard({
         />
       )}
       
-      {/* Selected state gradient - static when animations disabled */}
+      {/* Selected state gradient with animated rotating gradient */}
       {isSelected && (
-        disableAnimations ? (
+        <>
           <div
             className="absolute inset-0 rounded-2xl pointer-events-none"
             style={{
               background: `linear-gradient(135deg, ${accentColor}20, ${accentColor}10)`,
             }}
           />
-        ) : (
-          <div
-            className="absolute inset-0 rounded-2xl pointer-events-none"
-            style={{
-              background: `linear-gradient(135deg, ${accentColor}20, ${accentColor}10)`,
-            }}
-          />
-        )
+          {/* Rotating gradient animation - appears on all questions */}
+          {!disableAnimations && (
+            <motion.div
+              className="absolute inset-0 rounded-2xl pointer-events-none"
+              style={{
+                background: `conic-gradient(from 0deg, transparent, ${accentColor}25, ${accentColor}15, transparent)`,
+                opacity: 0.6,
+              }}
+              animate={{
+                rotate: [0, 360],
+              }}
+              transition={{
+                duration: 8,
+                repeat: Infinity,
+                ease: 'linear',
+              }}
+            />
+          )}
+        </>
       )}
 
       {/* Animated border glow - static when animations disabled */}
@@ -709,8 +724,8 @@ export default function ModernChoiceCard({
         </>
       )}
       
-      {/* Animated particles on selection - Enhanced */}
-      {isSelected && (
+      {/* Animated particles on selection - only for Q14, Q15, Q16 */}
+      {isSelected && !disableAnimations && showSpecialAnimations && (
         <>
           {/* Floating particles */}
           {[...Array(6)].map((_, i) => (

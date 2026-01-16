@@ -195,6 +195,7 @@ export default function QuestionRenderer({
                             selectedId={selectedChoice}
                             accentColor={accentColor}
                             isFirstQuestion={isFirstQuestion}
+                            questionId={question.id}
                           />
                         </motion.div>
                       ) : (
