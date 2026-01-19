@@ -67,8 +67,6 @@ export default function SurveyLanding() {
   const headingRef = useRef(null)
   const ctaRef = useRef(null)
   const logoRef = useRef(null)
-  const nomRef = useRef<HTMLInputElement>(null)
-  const prenomRef = useRef<HTMLInputElement>(null)
   const emailRef = useRef<HTMLInputElement>(null)
   const codeRef = useRef<HTMLInputElement>(null)
   const buttonRef = useRef<HTMLButtonElement>(null)
@@ -108,27 +106,61 @@ export default function SurveyLanding() {
   const [showConfirmationModal, setShowConfirmationModal] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
 
-  // Load saved form data on mount
+  // Load saved form data on mount and check submission status
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      // Don't restore if already submitted
+      // Don't restore if already submitted locally
       const isSubmitted = localStorage.getItem('survey_submitted') === 'true';
       if (isSubmitted) {
+        setSubmitted(true);
         return;
       }
 
       const savedEmail = localStorage.getItem('survey_email');
-      const savedNom = localStorage.getItem('survey_nom');
-      const savedPrenom = localStorage.getItem('survey_prenom');
+      const verifiedEmail = localStorage.getItem('survey_verified_email');
       
-      if (savedEmail && emailRef.current) {
+      // If email is verified, check if it has already submitted (for cross-device check)
+      if (verifiedEmail && emailRef.current) {
+        emailRef.current.value = verifiedEmail;
+        
+        // Check submission status for this email
+        fetch(`/api/auth/check-submission?email=${encodeURIComponent(verifiedEmail)}`)
+          .then(res => res.json())
+          .then(data => {
+            if (data.hasSubmitted) {
+              // Block access - already submitted
+              setSubmitted(true);
+              if (typeof window !== 'undefined') {
+                localStorage.setItem('survey_submitted', 'true');
+                if (data.submittedAt) {
+                  localStorage.setItem('survey_submitted_at', data.submittedAt.toString());
+                }
+              }
+            } else {
+              // Allow access - restore verified state
+              setEmailVerified(true);
+              
+              // Try to load progress from server (for cross-device resume)
+              // This will be handled by useQuestionNavigation hook, but we trigger a reload
+              // to ensure the hook picks up the verified email
+              if (typeof window !== 'undefined') {
+                // Small delay to ensure state is updated
+                setTimeout(() => {
+                  // The useQuestionNavigation hook will automatically load from server
+                  // when it detects the verified email
+                }, 100);
+              }
+            }
+          })
+          .catch(error => {
+            if (process.env.NODE_ENV !== 'production') {
+              console.error('Error checking submission status:', error);
+            }
+            // If check fails, still allow access (fail open)
+            setEmailVerified(true);
+          });
+      } else if (savedEmail && emailRef.current) {
         emailRef.current.value = savedEmail;
-      }
-      if (savedNom && nomRef.current) {
-        nomRef.current.value = savedNom;
-      }
-      if (savedPrenom && prenomRef.current) {
-        prenomRef.current.value = savedPrenom;
       }
     }
   }, []);
@@ -138,12 +170,6 @@ export default function SurveyLanding() {
     if (typeof window !== 'undefined') {
       if (emailRef.current?.value) {
         localStorage.setItem('survey_email', emailRef.current.value);
-      }
-      if (nomRef.current?.value) {
-        localStorage.setItem('survey_nom', nomRef.current.value);
-      }
-      if (prenomRef.current?.value) {
-        localStorage.setItem('survey_prenom', prenomRef.current.value);
       }
       localStorage.setItem('survey_email_verified', emailVerified.toString());
     }
@@ -156,38 +182,18 @@ export default function SurveyLanding() {
         if (emailRef.current?.value) {
           localStorage.setItem('survey_email', emailRef.current.value);
         }
-        if (nomRef.current?.value) {
-          localStorage.setItem('survey_nom', nomRef.current.value);
-        }
-        if (prenomRef.current?.value) {
-          localStorage.setItem('survey_prenom', prenomRef.current.value);
-        }
       }
     }, 300); // Debounce by 300ms
 
     const emailInput = emailRef.current;
-    const nomInput = nomRef.current;
-    const prenomInput = prenomRef.current;
 
     if (emailInput) {
       emailInput.addEventListener('input', handleInputChange);
-    }
-    if (nomInput) {
-      nomInput.addEventListener('input', handleInputChange);
-    }
-    if (prenomInput) {
-      prenomInput.addEventListener('input', handleInputChange);
     }
 
     return () => {
       if (emailInput) {
         emailInput.removeEventListener('input', handleInputChange);
-      }
-      if (nomInput) {
-        nomInput.removeEventListener('input', handleInputChange);
-      }
-      if (prenomInput) {
-        prenomInput.removeEventListener('input', handleInputChange);
       }
     };
   }, []);
@@ -287,8 +293,6 @@ export default function SurveyLanding() {
           'x-browser-fingerprint': fingerprint,
         },
         body: JSON.stringify({
-          nom: nomRef.current?.value.trim() || '',
-          prenom: prenomRef.current?.value.trim() || '',
           email: emailRef.current?.value.trim() || '',
           answers: enrichedAnswers,
         }),
@@ -329,9 +333,9 @@ export default function SurveyLanding() {
         localStorage.removeItem('survey_answers');
         localStorage.removeItem('survey_current_index');
         localStorage.removeItem('survey_completed');
-        localStorage.removeItem('survey_email');
-        localStorage.removeItem('survey_nom');
-        localStorage.removeItem('survey_prenom');
+        // Keep email and verified_email to prevent re-access on this device
+        // localStorage.removeItem('survey_email');
+        // localStorage.removeItem('survey_verified_email');
         localStorage.removeItem('survey_email_verified');
       }
       
@@ -349,7 +353,7 @@ export default function SurveyLanding() {
 
   // Submit answers to Power Automate when form is completed
   useEffect(() => {
-    if (isCompleted && answers.length > 0 && nomRef.current?.value && prenomRef.current?.value && !hasSubmittedRef.current) {
+    if (isCompleted && answers.length > 0 && emailRef.current?.value && !hasSubmittedRef.current) {
       hasSubmittedRef.current = true; // Mark as submitted immediately
       
       // Show confirmation modal instead of submitting directly
@@ -664,7 +668,8 @@ export default function SurveyLanding() {
 
   const handleSubmit = useCallback((e: React.FormEvent) => {
     e.preventDefault()
-    if (!nomRef.current?.value.trim() || !prenomRef.current?.value.trim()) {
+    // Email is required for submission
+    if (!emailRef.current?.value.trim()) {
       // Create a master timeline for all error animations
       const errorTimeline = gsap.timeline()
       
@@ -704,12 +709,6 @@ export default function SurveyLanding() {
       
       // Animate empty input fields - shake and highlight
       const emptyFields = []
-      if (!nomRef.current?.value.trim()) {
-        emptyFields.push(nomRef.current)
-      }
-      if (!prenomRef.current?.value.trim()) {
-        emptyFields.push(prenomRef.current)
-      }
       
       emptyFields.forEach((field, index) => {
         if (field) {
@@ -952,6 +951,29 @@ export default function SurveyLanding() {
       }
       
       if (data.verified) {
+        // Check if this email has already submitted the survey
+        const checkResponse = await fetch(`/api/auth/check-submission?email=${encodeURIComponent(data.email)}`)
+        const checkData = await checkResponse.json()
+        
+        if (checkData.hasSubmitted) {
+          const submittedDate = checkData.submittedAt 
+            ? new Date(checkData.submittedAt).toLocaleDateString('fr-FR')
+            : 'récemment'
+          
+          setCodeError(`Cette adresse email a déjà soumis le formulaire le ${submittedDate}.`)
+          toastError('Déjà soumis', 'Vous avez déjà complété cette enquête.')
+          
+          // Set as submitted to prevent access
+          if (typeof window !== 'undefined') {
+            localStorage.setItem('survey_submitted', 'true')
+            localStorage.setItem('survey_submitted_at', checkData.submittedAt?.toString() || Date.now().toString())
+            setSubmitted(true)
+          }
+          
+          setIsVerifyingCode(false)
+          return
+        }
+        
         setEmailVerified(true)
         setCodeSuccess('Email vérifié avec succès!')
         toastSuccess('Email vérifié!', 'Vous pouvez maintenant continuer avec le formulaire.')
@@ -959,6 +981,8 @@ export default function SurveyLanding() {
         // Save verified email to localStorage
         if (typeof window !== 'undefined' && data.email) {
           localStorage.setItem('survey_verified_email', data.email)
+          // Clear any old submission flag if email changed
+          localStorage.removeItem('survey_submitted')
         }
         
         setTimeout(() => setCodeSuccess(''), 3000)
@@ -1039,22 +1063,6 @@ export default function SurveyLanding() {
       )}
       
       {/* Fixed Navigation - Always visible on landing page */}
-      {!showNextPage && (
-        <nav ref={logoRef} className="fixed top-0 left-0 right-0 z-[100] px-6 md:px-12 py-6 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <img
-              src="/societe-des-boissons-du-maroc--600-removebg-preview.png"
-              alt="Société des Boissons du Maroc"
-              className="h-12 md:h-16 w-auto object-contain drop-shadow-lg"
-            />
-            <div className="h-12 md:h-16 w-px bg-gray-400/50"></div>
-            <span className="text-xl md:text-2xl font-bold drop-shadow-md">
-              <span className="text-blue-600">Enquête</span>
-              <span className="text-purple-600"> IT</span>
-            </span>
-          </div>
-        </nav>
-      )}
       
       {/* Loader */}
       {showLoader && (
@@ -1342,31 +1350,8 @@ export default function SurveyLanding() {
 
               {/* Form */}
               <form onSubmit={handleSubmit} className="space-y-4">
-                <div className="space-y-3">
-                  <label className="block text-xs font-bold tracking-wider uppercase text-blue-700">
-                    Vos informations
-                  </label>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div className="relative group">
-                      <input
-                        ref={nomRef}
-                        type="text"
-                        placeholder="Nom"
-                        className="w-full px-4 py-3 rounded-xl bg-gray-50 border-2 border-gray-200 text-gray-900 placeholder-gray-500 focus:border-purple-500 focus:ring-4 focus:ring-purple-500/20 transition-all duration-300 font-inter font-medium"
-                      />
-                    </div>
-                    <div className="relative group">
-                      <input
-                        ref={prenomRef}
-                        type="text"
-                        placeholder="Prénom"
-                        className="w-full px-4 py-3 rounded-xl bg-gray-50 border-2 border-gray-200 text-gray-900 placeholder-gray-500 focus:border-purple-500 focus:ring-4 focus:ring-purple-500/20 transition-all duration-300 font-inter font-medium"
-                      />
-                    </div>
-                  </div>
-                  
-                  {/* Email Verification Section */}
-                  <div className="space-y-3 pt-2">
+                {/* Email Verification Section */}
+                <div className="space-y-3 pt-2">
                     <label className="block text-xs font-bold tracking-wider uppercase text-blue-700">
                       Vérification Email
                     </label>
@@ -1536,23 +1521,22 @@ export default function SurveyLanding() {
                         </div>
                       </div>
                     )}
-                  </div>
-                  
-                  {showError && (
-                    <motion.div
-                      ref={errorMessageRef}
-                      initial={{ opacity: 0, y: -10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      className="flex items-center gap-2 px-4 py-3 rounded-xl bg-red-50 border-2 border-red-200 text-red-700 text-sm font-medium"
-                    >
-                      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
-                      <span>Veuillez remplir tous les champs et vérifier votre email</span>
-                    </motion.div>
-                  )}
                 </div>
-
+                
+                {showError && (
+                  <motion.div
+                    ref={errorMessageRef}
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="flex items-center gap-2 px-4 py-3 rounded-xl bg-red-50 border-2 border-red-200 text-red-700 text-sm font-medium"
+                  >
+                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <span>Veuillez remplir tous les champs et vérifier votre email</span>
+                  </motion.div>
+                )}
+                
                 <button
                   ref={buttonRef}
                   type="submit"
@@ -1604,8 +1588,6 @@ export default function SurveyLanding() {
             currentQuestionId={currentQuestion.id}
             currentQuestionIndex={currentQuestionIndex}
             totalQuestions={totalQuestions}
-            onBack={goToPreviousQuestion}
-            showBackButton={true}
           />
         </div>
       )}
@@ -1645,6 +1627,8 @@ export default function SurveyLanding() {
           >
             <QuestionRenderer
               question={currentQuestion}
+              onPrevious={goToPreviousQuestion}
+              showPreviousButton={currentQuestionIndex > 0}
               onAnswer={(answer) => {
                 // Capture emoji for Lottie reaction with smooth delay
                 if (currentQuestion.choices) {
@@ -1666,12 +1650,24 @@ export default function SurveyLanding() {
       )}
 
       {/* Completion Screen with smooth transition */}
+      {/* Progress Bar - Also show on completion page */}
+      {isCompleted && currentQuestion && (
+        <div className="fixed top-0 left-0 right-0 z-50">
+          <ProgressBar
+            currentQuestionId={currentQuestion.id}
+            currentQuestionIndex={totalQuestions - 1}
+            totalQuestions={totalQuestions}
+          />
+        </div>
+      )}
+
       {isCompleted && (
         <motion.div
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.8, ease: 'easeOut' }}
-          className="absolute inset-0 z-50"
+          className="absolute inset-0 z-40"
+          style={{ paddingTop: '130px' }}
         >
           <CompletionScreen
             onReturnToStart={() => {
@@ -1700,8 +1696,6 @@ export default function SurveyLanding() {
         }}
         onConfirm={handleConfirmSubmission}
         answers={answers}
-        nom={nomRef.current?.value.trim() || ''}
-        prenom={prenomRef.current?.value.trim() || ''}
         email={emailRef.current?.value.trim() || ''}
         isSubmitting={isSubmitting}
       />

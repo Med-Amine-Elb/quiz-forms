@@ -99,12 +99,10 @@ export async function POST(request: NextRequest) {
       return createValidationErrorResponse(errorMessages, 'POST /api/submit');
     }
 
-    const { nom, prenom, email, answers } = validation.data;
+    const { email, answers } = validation.data;
 
-    // Check for duplicate submission
-    const browserFingerprint = request.headers.get('x-browser-fingerprint');
-    const userIdentifier = submissionTracker.generateIdentifier(ip, browserFingerprint || undefined);
-    const submissionCheck = submissionTracker.check(userIdentifier);
+    // Check for duplicate submission by email (allows cross-device access but prevents resubmission)
+    const submissionCheck = submissionTracker.checkByEmail(email);
     
     if (submissionCheck.hasSubmitted) {
       const submittedDate = submissionCheck.submittedAt 
@@ -114,7 +112,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         { 
           error: 'Déjà soumis',
-          message: 'Vous avez déjà soumis ce formulaire.',
+          message: 'Cette adresse email a déjà soumis le formulaire.',
           details: `Soumission précédente: ${submittedDate}`,
           code: 'DUPLICATE_SUBMISSION'
         },
@@ -125,8 +123,6 @@ export async function POST(request: NextRequest) {
     // Prepare data for Power Automate (matching your flow's expected format)
     // Note: Data is already validated and sanitized by Zod
     const payload = {
-      nom,
-      prenom,
       email,
       answers: answers.map((answer) => ({
         questionId: answer.questionId,
@@ -160,11 +156,11 @@ export async function POST(request: NextRequest) {
 
     const data = await response.json();
 
-    // Record successful submission to prevent duplicates
-    submissionTracker.record(userIdentifier, ip, browserFingerprint || undefined);
+    // Record successful submission by email to prevent duplicates
+    submissionTracker.recordByEmail(email, ip);
 
-    // Send confirmation email asynchronously (don't wait for it)
-    sendConfirmationEmail(email, nom, prenom).catch((error) => {
+      // Send confirmation email asynchronously (don't wait for it)
+      sendConfirmationEmail(email).catch((error) => {
       if (process.env.NODE_ENV !== 'production') {
         console.error('Failed to send confirmation email:', error);
       }
