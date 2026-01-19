@@ -122,15 +122,11 @@ export default function MultipleChoiceList({
         style={disableAnimations ? {} : {
           willChange: 'transform, opacity',
         }}
-        className={`grid gap-5 ${
-          isVerticalLayout 
-            ? 'grid-cols-1' 
-            : 'grid-cols-1 sm:grid-cols-2'
-        }`}
+        className="flex flex-col gap-4"
       >
         {choices.map((choice, index) => (
-          <ModernChoiceCard
-            key={choice.id}
+          <div key={choice.id} className="w-full">
+            <ModernChoiceCard
             id={choice.id}
             label={choice.label}
             isSelected={selectedIds.includes(choice.id)}
@@ -145,6 +141,7 @@ export default function MultipleChoiceList({
             disableAnimations={disableAnimations}
             questionId={questionId}
           />
+          </div>
         ))}
       </ListWrapper>
     </div>

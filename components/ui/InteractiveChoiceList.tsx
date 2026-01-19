@@ -1,11 +1,10 @@
 "use client";
 
+// InteractiveChoiceList component - renders choice items for single-choice questions
 import { motion } from "framer-motion";
 import { Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { LucideIcon } from "lucide-react";
-import { useState, useRef, useEffect, useCallback } from "react";
-import AnswerHoverCard from "./AnswerHoverCard";
 
 interface Choice {
   id: string;
@@ -23,54 +22,26 @@ interface InteractiveChoiceListProps {
   accentColor?: string;
 }
 
-// Individual choice item component that can use hooks
+// Individual choice item component
 function ChoiceItem({
   choice,
   index,
   isSelected,
   accentColor,
   onSelect,
-  onHover,
-  onTruncationChange,
 }: {
   choice: Choice;
   index: number;
   isSelected: boolean;
   accentColor: string;
   onSelect: () => void;
-  onHover: (isHovered: boolean) => void;
-  onTruncationChange: (isTruncated: boolean) => void;
 }) {
-  const textRef = useRef<HTMLSpanElement>(null);
-
-  useEffect(() => {
-    const checkTruncation = () => {
-      if (textRef.current) {
-        // Check if text is truncated by comparing scrollHeight with clientHeight
-        // For line-clamp, scrollHeight > clientHeight means text is truncated
-        const isOverflowing = textRef.current.scrollHeight > textRef.current.clientHeight;
-        onTruncationChange(isOverflowing);
-      }
-    };
-
-    // Check after a small delay to ensure DOM is ready
-    const timer = setTimeout(checkTruncation, 100);
-    // Recheck on resize
-    window.addEventListener('resize', checkTruncation);
-    
-    return () => {
-      clearTimeout(timer);
-      window.removeEventListener('resize', checkTruncation);
-    };
-  }, [onTruncationChange]);
-
+  // Get the display text from the choice label
   const displayText = choice.label;
 
   return (
     <motion.button
       onClick={onSelect}
-      onMouseEnter={() => onHover(true)}
-      onMouseLeave={() => onHover(false)}
       initial={{ opacity: 0, y: 20, scale: 0.96 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
       transition={{
@@ -91,7 +62,7 @@ function ChoiceItem({
         transition: { duration: 0.15 },
       }}
       className={cn(
-        "relative px-6 py-5 rounded-2xl text-left transition-all duration-300",
+        "relative px-6 py-5 rounded-2xl text-left transition-all duration-300 w-full",
         "border-2 font-inter font-semibold",
         "focus:outline-none focus:ring-4 focus:ring-offset-2",
         "group overflow-hidden backdrop-blur-xl transform-gpu",
@@ -220,12 +191,11 @@ function ChoiceItem({
           
           {/* Text - Show full text, allow wrapping for longer labels */}
           <span 
-            ref={textRef}
             className={cn(
-              "flex-1 font-extrabold text-base sm:text-lg leading-tight",
+              "flex-1 font-extrabold text-base sm:text-lg leading-snug",
               isSelected ? "text-gray-900" : "text-gray-800 group-hover:text-gray-900",
-              // Allow text to wrap if it's too long, but prefer single line
-              "line-clamp-2"
+              // Allow text to wrap naturally for long answers, but limit to 3 lines max
+              "line-clamp-3 break-words"
             )}
           >
             {displayText}
@@ -302,59 +272,21 @@ export default function InteractiveChoiceList({
 }: InteractiveChoiceListProps) {
   // Ensure accentColor is always defined
   const finalAccentColor = accentColor || '#0EA5E9';
-  const [hoveredChoiceId, setHoveredChoiceId] = useState<string | null>(null);
-  const [truncatedChoices, setTruncatedChoices] = useState<Set<string>>(new Set());
-  const hoveredChoice = choices.find(c => c.id === hoveredChoiceId);
-  
-  // Check if hovered choice should show card (truncated or has description)
-  const shouldShowCard = hoveredChoice && (
-    truncatedChoices.has(hoveredChoice.id) || 
-    (hoveredChoice.description && hoveredChoice.description.trim().length > 0)
-  );
-
-  const handleTruncationChange = useCallback((choiceId: string, isTruncated: boolean) => {
-    setTruncatedChoices(prev => {
-      const next = new Set(prev);
-      if (isTruncated) {
-        next.add(choiceId);
-      } else {
-        next.delete(choiceId);
-      }
-      return next;
-    });
-  }, []);
 
   return (
-    <>
-      {/* Hover Card - only show when text is actually truncated or has description */}
-      {hoveredChoice && shouldShowCard && (
-        <AnswerHoverCard
-          key={hoveredChoice.id}
-          label={hoveredChoice.label}
-          description={hoveredChoice.description}
-          icon={hoveredChoice.icon}
-          emoji={hoveredChoice.emoji}
-          accentColor={finalAccentColor}
-          isVisible={!!hoveredChoiceId}
-        />
-      )}
-
-      <div className="w-full max-w-4xl mx-auto">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-          {choices.map((choice, index) => (
-            <ChoiceItem
-              key={choice.id}
-              choice={choice}
-              index={index}
-              isSelected={selectedId === choice.id}
-              accentColor={finalAccentColor}
-              onSelect={() => onSelect(choice.id)}
-              onHover={(isHovered) => setHoveredChoiceId(isHovered ? choice.id : null)}
-              onTruncationChange={(isTruncated) => handleTruncationChange(choice.id, isTruncated)}
-            />
-          ))}
-        </div>
+    <div className="w-full max-w-4xl mx-auto">
+      <div className="flex flex-col gap-4">
+        {choices.map((choice, index) => (
+          <ChoiceItem
+            key={choice.id}
+            choice={choice}
+            index={index}
+            isSelected={selectedId === choice.id}
+            accentColor={finalAccentColor}
+            onSelect={() => onSelect(choice.id)}
+          />
+        ))}
       </div>
-    </>
+    </div>
   );
 }

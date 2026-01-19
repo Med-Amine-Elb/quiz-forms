@@ -169,14 +169,12 @@ const QuestionPage = forwardRef<HTMLDivElement, QuestionPageProps>(({
         <div 
           className={cn(
             "w-full lg:w-2/3 flex flex-col items-center lg:items-start justify-start px-2 lg:px-4 py-4 lg:py-6 relative z-20",
-            // Hide scroll for Q1 and Q7, show scrollbar-hide for others
-            questionNumber === 1 || questionNumber === 7 
-              ? "overflow-hidden" 
-              : "overflow-y-auto overflow-x-hidden scrollbar-hide"
+            // Enable scroll for all questions to ensure Continue button is always accessible
+            "overflow-y-auto overflow-x-hidden scrollbar-hide"
           )}
           style={{
             willChange: 'transform',
-            maxHeight: (questionNumber === 1 || questionNumber === 7) ? 'calc(100vh - 6rem)' : 'none',
+            maxHeight: 'calc(100vh - 6rem)',
           }}
         >
           {/* Animated Question Card - Consistent sizing for all questions */}
@@ -191,7 +189,7 @@ const QuestionPage = forwardRef<HTMLDivElement, QuestionPageProps>(({
           </div>
 
           {/* Question Content - Grouped with Breathing Room - Centered to match question card */}
-          <div ref={questionTextRef} className="w-full max-w-4xl mx-auto">
+          <div ref={questionTextRef} className="w-full max-w-4xl mx-auto pb-8 mb-8">
             {children}
           </div>
         </div>

@@ -11,8 +11,6 @@ interface ModernChoiceCardProps {
   label: string;
   isSelected: boolean;
   onClick: () => void;
-  onHoverChange?: (isHovered: boolean) => void;
-  onTruncationChange?: (isTruncated: boolean) => void;
   index: number;
   accentColor?: string;
   icon?: LucideIcon;
@@ -29,8 +27,6 @@ export default function ModernChoiceCard({
   label,
   isSelected,
   onClick,
-  onHoverChange,
-  onTruncationChange,
   index,
   accentColor = '#0EA5E9',
   icon: Icon,
@@ -47,7 +43,6 @@ export default function ModernChoiceCard({
   const displayText = label;
   
   const buttonRef = useRef<HTMLButtonElement>(null);
-  const textRef = useRef<HTMLDivElement>(null);
   const [ripples, setRipples] = useState<Array<{ x: number; y: number; id: number }>>([]);
 
   // Magnetic hover effect
@@ -96,28 +91,6 @@ export default function ModernChoiceCard({
     onClick();
   };
 
-  // Check for text truncation
-  useEffect(() => {
-    const checkTruncation = () => {
-      if (textRef.current && onTruncationChange) {
-        // Check if text is truncated by comparing scrollHeight with clientHeight
-        // For line-clamp, scrollHeight > clientHeight means text is truncated
-        const isOverflowing = textRef.current.scrollHeight > textRef.current.clientHeight;
-        onTruncationChange(isOverflowing);
-      }
-    };
-
-    // Check after a small delay to ensure DOM is ready
-    const timer = setTimeout(checkTruncation, 100);
-    // Recheck on resize
-    window.addEventListener('resize', checkTruncation);
-    
-    return () => {
-      clearTimeout(timer);
-      window.removeEventListener('resize', checkTruncation);
-    };
-  }, [onTruncationChange, label]);
-  
   const buttonContent = (
     <>
       {/* Simple ripple effect on click */}
@@ -271,11 +244,11 @@ export default function ModernChoiceCard({
           ) : null}
 
           {/* Text Content */}
-          <div ref={textRef} className="flex-1 min-w-0">
+          <div className="flex-1 min-w-0">
             <div
               className={cn(
-                "font-semibold text-base sm:text-lg leading-tight",
-                "line-clamp-2"
+                "font-semibold text-base sm:text-lg leading-snug",
+                "line-clamp-3 break-words"
               )}
               style={{
                 color: isSelected ? '#111827' : '#1F2937',
@@ -349,13 +322,7 @@ export default function ModernChoiceCard({
       <button
         ref={buttonRef}
         onClick={handleClick}
-        onMouseEnter={() => {
-          onHoverChange?.(true);
-        }}
-      onMouseLeave={() => {
-        onHoverChange?.(false);
-      }}
-      style={{
+        style={{
         willChange: 'transform, opacity',
         borderColor: isSelected ? accentColor : undefined,
         boxShadow: isSelected 
@@ -551,13 +518,12 @@ export default function ModernChoiceCard({
             }}
           >
             <motion.div 
-              ref={textRef}
               className={cn(
-                "font-extrabold leading-tight",
+                "font-extrabold leading-snug",
                 "text-base sm:text-lg",
                 isSelected ? "text-gray-900" : "text-gray-800 group-hover:text-gray-900",
-                // Allow text to wrap if it's too long, but prefer single line
-                "line-clamp-2"
+                // Allow text to wrap naturally for long answers, but limit to 3 lines max
+                "line-clamp-3 break-words"
               )}
               animate={isSelected ? {
                 scale: [1, 1.02, 1],
@@ -798,14 +764,8 @@ export default function ModernChoiceCard({
     <motion.button
       ref={buttonRef}
       onClick={handleClick}
-      onMouseEnter={() => {
-        onHoverChange?.(true);
-      }}
       onMouseMove={handleMouseMove}
-      onMouseLeave={() => {
-        onHoverChange?.(false);
-        handleMouseLeave();
-      }}
+      onMouseLeave={handleMouseLeave}
       initial={{ opacity: 0, y: 10 }}
       animate={{ 
         opacity: 1, 

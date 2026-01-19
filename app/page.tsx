@@ -1022,15 +1022,12 @@ export default function SurveyLanding() {
     ? sectionBackgrounds[currentSection.id] || sectionBackgrounds.landing
     : sectionBackgrounds.landing;
 
-  // Check if current question is Q1
-  const isQ1 = showNextPage && currentQuestion?.id === 1;
-  
   return (
     <div 
-      className={`w-full h-screen overflow-hidden relative ${!showNextPage || isQ1 ? 'no-scroll' : ''}`}
+      className={`w-full h-screen overflow-hidden relative ${!showNextPage ? 'no-scroll' : ''}`}
       style={{ 
         overflowX: 'hidden',
-        overflowY: (!showNextPage || isQ1) ? 'hidden' : 'auto',
+        overflowY: !showNextPage ? 'hidden' : 'hidden', // Container doesn't scroll, content area does
       }}
     >
       {/* Animated Background Layer */}

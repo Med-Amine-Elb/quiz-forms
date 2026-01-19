@@ -1,9 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { useState, useCallback } from "react";
 import ModernChoiceCard from "./ModernChoiceCard";
-import AnswerHoverCard from "@/components/ui/AnswerHoverCard";
 
 interface Choice {
   id: string;
@@ -33,46 +31,9 @@ export default function ModernChoiceList({
 }: ModernChoiceListProps) {
   // Ensure accentColor is always defined
   const finalAccentColor = accentColor || '#0EA5E9';
-  // Stack vertically for 3 or fewer choices
-  const isVerticalLayout = choices.length <= 3;
-  const [hoveredChoiceId, setHoveredChoiceId] = useState<string | null>(null);
-  const [truncatedChoices, setTruncatedChoices] = useState<Set<string>>(new Set());
-  const hoveredChoice = choices.find(c => c.id === hoveredChoiceId);
-  
-  // Check if hovered choice should show card (truncated or has description)
-  const shouldShowCard = hoveredChoice && (
-    truncatedChoices.has(hoveredChoice.id) || 
-    (hoveredChoice.description && hoveredChoice.description.trim().length > 0)
-  );
-
-  const handleTruncationChange = useCallback((choiceId: string, isTruncated: boolean) => {
-    setTruncatedChoices(prev => {
-      const next = new Set(prev);
-      if (isTruncated) {
-        next.add(choiceId);
-      } else {
-        next.delete(choiceId);
-      }
-      return next;
-    });
-  }, []);
   
   return (
-    <>
-      {/* Hover Card - only show when text is actually truncated or has description */}
-      {hoveredChoice && shouldShowCard && (
-        <AnswerHoverCard
-          key={hoveredChoice.id}
-          label={hoveredChoice.label}
-          description={hoveredChoice.description}
-          icon={hoveredChoice.icon}
-          emoji={hoveredChoice.emoji}
-          accentColor={finalAccentColor}
-          isVisible={!!hoveredChoiceId}
-        />
-      )}
-
-      <div className={`w-full mx-auto max-w-4xl`}>
+    <div className={`w-full mx-auto max-w-4xl`}>
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
@@ -83,11 +44,7 @@ export default function ModernChoiceList({
         style={{
           willChange: 'opacity',
         }}
-        className={`grid gap-5 ${
-          isVerticalLayout 
-            ? 'grid-cols-1' 
-            : 'grid-cols-1 sm:grid-cols-2'
-        }`}
+        className="flex flex-col gap-4"
       >
         {choices.map((choice, index) => (
           <motion.div
@@ -103,19 +60,13 @@ export default function ModernChoiceList({
               transition: { duration: 0.2 },
             }}
             style={{ willChange: 'transform, opacity' }}
-            className="transform-gpu"
+            className="transform-gpu w-full"
           >
             <ModernChoiceCard
               id={choice.id}
               label={choice.label}
               isSelected={selectedId === choice.id}
               onClick={() => onSelect(choice.id)}
-              onHoverChange={(isHovered: boolean) => {
-                setHoveredChoiceId(isHovered ? choice.id : null);
-              }}
-              onTruncationChange={(isTruncated: boolean) => {
-                handleTruncationChange(choice.id, isTruncated);
-              }}
               index={0} // Set to 0 since we're handling stagger in parent
               accentColor={finalAccentColor}
               icon={(choice as any).icon}
@@ -129,7 +80,6 @@ export default function ModernChoiceList({
         ))}
       </motion.div>
     </div>
-    </>
   );
 }
 
