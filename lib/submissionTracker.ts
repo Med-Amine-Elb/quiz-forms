@@ -2,7 +2,7 @@
  * Duplicate Submission Prevention
  * 
  * Prevents users from submitting the survey more than once.
- * Uses IP address + browser fingerprint for identification.
+ * Uses email address as the primary identifier (allows cross-device access).
  * 
  * Options:
  * 1. In-Memory (Simple, no dependencies) - Current implementation
@@ -11,8 +11,8 @@
 
 interface SubmissionRecord {
   submittedAt: number;
-  ip: string;
-  fingerprint?: string;
+  email: string;
+  ip?: string;
   expiresAt: number;
 }
 
@@ -34,16 +34,75 @@ setInterval(() => {
  * Configuration for submission tracking
  */
 export const submissionConfig = {
-  // How long to remember a submission (default: 30 days)
-  rememberDuration: 30 * 24 * 60 * 60 * 1000, // 30 days in milliseconds
+  // How long to remember a submission (default: permanently, but we'll use a very long duration)
+  // Since we want to prevent resubmission forever, we use a very long expiration (10 years)
+  rememberDuration: 10 * 365 * 24 * 60 * 60 * 1000, // 10 years in milliseconds
   
   // For testing: shorter duration (1 hour)
   // rememberDuration: 60 * 60 * 1000, // 1 hour
 } as const;
 
 /**
- * Generate a unique identifier for a user
+ * Normalize email address (lowercase, trim)
+ */
+function normalizeEmail(email: string): string {
+  return email.trim().toLowerCase();
+}
+
+/**
+ * Check if an email has already submitted the survey
+ * 
+ * @param email - User email address
+ * @returns Object with hasSubmitted status and submission time
+ */
+export function checkSubmissionByEmail(
+  email: string
+): { hasSubmitted: boolean; submittedAt?: number } {
+  const normalized = normalizeEmail(email);
+  const record = submissionStore.get(normalized);
+  
+  if (!record) {
+    return { hasSubmitted: false };
+  }
+  
+  // Check if record has expired
+  if (record.expiresAt < Date.now()) {
+    submissionStore.delete(normalized);
+    return { hasSubmitted: false };
+  }
+  
+  return {
+    hasSubmitted: true,
+    submittedAt: record.submittedAt,
+  };
+}
+
+/**
+ * Record a submission by email
+ * 
+ * @param email - User email address
+ * @param ip - Optional IP address (for logging)
+ */
+export function recordSubmissionByEmail(
+  email: string,
+  ip?: string
+): void {
+  const normalized = normalizeEmail(email);
+  const now = Date.now();
+  const expiresAt = now + submissionConfig.rememberDuration;
+  
+  submissionStore.set(normalized, {
+    submittedAt: now,
+    email: normalized,
+    ip,
+    expiresAt,
+  });
+}
+
+/**
+ * Generate a unique identifier for a user (backward compatibility)
  * Combines IP address with optional browser fingerprint
+ * @deprecated Use checkSubmissionByEmail instead
  */
 export function generateUserIdentifier(ip: string, fingerprint?: string): string {
   if (fingerprint) {
@@ -53,10 +112,8 @@ export function generateUserIdentifier(ip: string, fingerprint?: string): string
 }
 
 /**
- * Check if a user has already submitted
- * 
- * @param identifier - User identifier (IP or IP:fingerprint)
- * @returns Object with hasSubmitted status and submission time
+ * Check if a user has already submitted (backward compatibility)
+ * @deprecated Use checkSubmissionByEmail instead
  */
 export function checkSubmission(
   identifier: string
@@ -80,11 +137,8 @@ export function checkSubmission(
 }
 
 /**
- * Record a submission
- * 
- * @param identifier - User identifier
- * @param ip - IP address
- * @param fingerprint - Optional browser fingerprint
+ * Record a submission (backward compatibility)
+ * @deprecated Use recordSubmissionByEmail instead
  */
 export function recordSubmission(
   identifier: string,
@@ -96,8 +150,8 @@ export function recordSubmission(
   
   submissionStore.set(identifier, {
     submittedAt: now,
+    email: '', // Not available in old method
     ip,
-    fingerprint,
     expiresAt,
   });
 }
@@ -134,12 +188,25 @@ export function getSubmissionStats(): {
 }
 
 /**
+ * Clear a submission record by email
+ * 
+ * @param email - Email address to clear
+ */
+export function clearSubmissionByEmail(email: string): void {
+  const normalized = normalizeEmail(email);
+  submissionStore.delete(normalized);
+}
+
+/**
  * Submission tracker helper
  */
 export const submissionTracker = {
   check: checkSubmission,
   record: recordSubmission,
+  checkByEmail: checkSubmissionByEmail,
+  recordByEmail: recordSubmissionByEmail,
   clear: clearSubmission,
+  clearByEmail: clearSubmissionByEmail,
   generateIdentifier: generateUserIdentifier,
   stats: getSubmissionStats,
   config: submissionConfig,

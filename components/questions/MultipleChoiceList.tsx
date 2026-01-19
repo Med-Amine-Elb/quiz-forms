@@ -29,6 +29,8 @@ export default function MultipleChoiceList({
   isFirstQuestion = false,
   questionId,
 }: MultipleChoiceListProps) {
+  // Ensure accentColor is always defined
+  const finalAccentColor = accentColor || '#06b6d4';
   // Disable animations for question 14 for testing
   const disableAnimations = questionId === 14;
   const handleToggle = (choiceId: string) => {
@@ -71,8 +73,8 @@ export default function MultipleChoiceList({
           })}
           className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white/90 backdrop-blur-sm border-2 shadow-lg"
           style={{
-            borderColor: accentColor || '#06b6d4',
-            boxShadow: `0 4px 20px ${accentColor || '#06b6d4'}20`,
+            borderColor: finalAccentColor,
+            boxShadow: `0 4px 20px ${finalAccentColor}20`,
           }}
         >
           <IconWrapper
@@ -87,18 +89,18 @@ export default function MultipleChoiceList({
             {selectedCount > 0 ? (
               <CheckSquare2 
                 className="w-5 h-5" 
-                style={{ color: accentColor || '#06b6d4' }} 
+                style={{ color: finalAccentColor }} 
               />
             ) : (
               <SquareStack 
                 className="w-5 h-5" 
-                style={{ color: accentColor || '#06b6d4' }} 
+                style={{ color: finalAccentColor }} 
               />
             )}
           </IconWrapper>
           <span 
             className="font-inter font-semibold text-sm sm:text-base"
-            style={{ color: accentColor || '#06b6d4' }}
+            style={{ color: finalAccentColor }}
           >
             {selectedCount > 0 
               ? `${selectedCount} ${selectedCount === 1 ? 'option sélectionnée' : 'options sélectionnées'}`
@@ -134,7 +136,7 @@ export default function MultipleChoiceList({
             isSelected={selectedIds.includes(choice.id)}
             onClick={() => handleToggle(choice.id)}
             index={index}
-            accentColor={accentColor}
+            accentColor={finalAccentColor}
             icon={(choice as any).icon}
             isFirstQuestion={isFirstQuestion}
             emoji={choice.emoji}

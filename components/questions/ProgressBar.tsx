@@ -1,7 +1,7 @@
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, Sparkles, TrendingUp } from "lucide-react";
+import { Sparkles, TrendingUp } from "lucide-react";
 import { getSectionForQuestion } from "@/lib/questionSections";
 import { useEffect, useState, useRef } from "react";
 
@@ -9,16 +9,12 @@ interface ProgressBarProps {
   currentQuestionId: number;
   currentQuestionIndex: number;
   totalQuestions: number;
-  onBack?: () => void;
-  showBackButton?: boolean;
 }
 
 export default function ProgressBar({
   currentQuestionId,
   currentQuestionIndex,
   totalQuestions,
-  onBack,
-  showBackButton = true,
 }: ProgressBarProps) {
   // Calculate progress and ensure it never exceeds 100%
   const progress = Math.min(((currentQuestionIndex + 1) / totalQuestions) * 100, 100);
@@ -30,7 +26,7 @@ export default function ProgressBar({
 
   // Check for milestone achievements
   useEffect(() => {
-    const milestones = [25, 50, 75, 100];
+    const milestones = [50, 75, 100];
     const currentMilestone = milestones.find(
       (m) => progress >= m && !hasCelebratedRef.current.has(m)
     );
@@ -38,7 +34,6 @@ export default function ProgressBar({
     if (currentMilestone && previousProgressRef.current < currentMilestone) {
       hasCelebratedRef.current.add(currentMilestone);
       const messages = {
-        25: "🎯 25% complété! Vous êtes sur la bonne voie!",
         50: "🎉 50% complété! À mi-chemin!",
         75: "🚀 75% complété! Presque terminé!",
         100: "⭐ 100% complété! Excellent travail!",
@@ -55,7 +50,7 @@ export default function ProgressBar({
   }, [progress]);
 
   return (
-    <div className="w-full px-6 sm:px-8 py-4 bg-white/80 backdrop-blur-sm border-b border-gray-100 relative">
+    <div className="w-full px-6 sm:px-8 py-6 bg-white/80 backdrop-blur-sm border-b border-gray-100 relative">
       {/* Milestone Celebration Toast */}
       <AnimatePresence>
         {showMilestone && (
@@ -106,39 +101,36 @@ export default function ProgressBar({
         )}
       </AnimatePresence>
 
-      {/* Back Button - Positioned at absolute max left */}
-      {showBackButton && onBack && currentQuestionIndex > 0 && (
-        <motion.button
-          onClick={onBack}
-          whileHover={{ scale: 1.1, x: -2 }}
-          whileTap={{ scale: 0.9 }}
-          className="absolute left-0 top-1/2 -translate-y-1/2 p-2 rounded-lg hover:bg-gray-100 transition-colors duration-200 z-10 ml-2"
-          aria-label="Retour à la question précédente"
-        >
-          <motion.div
-            animate={{
-              x: [0, -3, 0],
-            }}
-            transition={{
-              duration: 1.5,
-              repeat: Infinity,
-              ease: "easeInOut",
-            }}
-          >
-            <ArrowLeft className="w-5 h-5 text-gray-700" />
-          </motion.div>
-        </motion.button>
-      )}
-      
-      <div className="max-w-7xl mx-auto" style={{ paddingLeft: showBackButton && onBack && currentQuestionIndex > 0 ? '48px' : '0' }}>
+      {/* SBM Logo - Top Right */}
+      <motion.div
+        className="absolute top-0 right-0 z-50"
+        initial={{ opacity: 0, x: 10 }}
+        animate={{ opacity: 1, x: 0 }}
+        transition={{
+          duration: 0.6,
+          ease: "easeOut",
+        }}
+        style={{
+          right: '24px',
+          top: '6px',
+        }}
+      >
+        <img
+          src="/societe-des-boissons-du-maroc--600-removebg-preview.png"
+          alt="SBM Logo"
+          className="h-32 w-auto object-contain"
+        />
+      </motion.div>
+
+      <div className="max-w-7xl mx-auto" style={{ paddingRight: '140px' }}>
         {/* Progress Info */}
-        <div className="flex items-center justify-between mb-2">
+        <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-3">
             <motion.span
               key={currentQuestionId}
               initial={{ opacity: 0, x: -10 }}
               animate={{ opacity: 1, x: 0 }}
-              className="text-sm font-semibold text-gray-700 font-inter"
+              className="text-base font-semibold text-gray-700 font-inter"
             >
               Question {currentQuestionId} sur {totalQuestions}
             </motion.span>
@@ -147,7 +139,7 @@ export default function ProgressBar({
               initial={{ scale: 0.8, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               transition={{ type: "spring", stiffness: 300, damping: 20 }}
-              className="text-xs font-medium px-2 py-1 rounded-full text-white font-inter"
+              className="text-sm font-medium px-3 py-1.5 rounded-full text-white font-inter"
               style={{ backgroundColor: section.color }}
               whileHover={{ scale: 1.05 }}
             >
@@ -159,72 +151,76 @@ export default function ProgressBar({
             initial={{ scale: 1.2, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             transition={{ type: "spring", stiffness: 400, damping: 15 }}
-            className="text-sm font-semibold font-inter flex items-center gap-1"
+            className="text-base font-semibold font-inter flex items-center gap-1.5"
             style={{ color: section.color }}
           >
-            <TrendingUp className="w-4 h-4" />
+            <TrendingUp className="w-5 h-5" />
             {Math.round(progress)}%
           </motion.span>
         </div>
 
         {/* Progress Bar */}
-        <div className="relative h-2 bg-gray-200 rounded-full overflow-hidden">
-          <motion.div
-            initial={{ width: 0 }}
-            animate={{ width: `${Math.min(progress, 100)}%` }}
-            transition={{ 
-              duration: 0.5, 
-              ease: 'easeOut',
-            }}
-            className="h-full rounded-full relative"
-            style={{
-              background: `linear-gradient(to right, ${section.color}, ${section.accent})`,
-              boxShadow: showMilestone 
-                ? `0 0 20px ${section.color}60` 
-                : `0 0 10px ${section.color}40`,
-            }}
-          >
-            {/* Pulse effect on milestone */}
-            {showMilestone && (
-              <motion.div
-                className="absolute inset-0 rounded-full"
-                style={{
-                  background: `linear-gradient(to right, ${section.color}, ${section.accent})`,
-                }}
-                animate={{
-                  opacity: [0.5, 0.8, 0.5],
-                  scale: [1, 1.05, 1],
-                }}
-                transition={{
-                  duration: 1,
-                  repeat: 3,
-                  ease: "easeInOut",
-                }}
-              />
-            )}
-          </motion.div>
-          {/* Shimmer effect */}
-          <motion.div
-            animate={{
-              x: ['-100%', '100%'],
-            }}
-            transition={{
-              duration: 2,
-              repeat: Infinity,
-              ease: 'linear',
-            }}
-            className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent pointer-events-none"
-          />
+        <div className="relative h-4 bg-gray-200 rounded-full overflow-visible">
+          <div className="absolute inset-0 rounded-full overflow-hidden">
+            <motion.div
+              initial={{ width: 0 }}
+              animate={{ width: `${Math.min(progress, 100)}%` }}
+              transition={{ 
+                duration: 0.5, 
+                ease: 'easeOut',
+              }}
+              className="h-full rounded-full relative"
+              style={{
+                background: `linear-gradient(to right, ${section.color}, ${section.accent})`,
+                boxShadow: showMilestone 
+                  ? `0 0 20px ${section.color}60` 
+                  : `0 0 10px ${section.color}40`,
+              }}
+            >
+              {/* Pulse effect on milestone */}
+              {showMilestone && (
+                <motion.div
+                  className="absolute inset-0 rounded-full"
+                  style={{
+                    background: `linear-gradient(to right, ${section.color}, ${section.accent})`,
+                  }}
+                  animate={{
+                    opacity: [0.5, 0.8, 0.5],
+                    scale: [1, 1.05, 1],
+                  }}
+                  transition={{
+                    duration: 1,
+                    repeat: 3,
+                    ease: "easeInOut",
+                  }}
+                />
+              )}
+            </motion.div>
+            {/* Shimmer effect */}
+            <motion.div
+              animate={{
+                x: ['-100%', '100%'],
+              }}
+              transition={{
+                duration: 2,
+                repeat: Infinity,
+                ease: 'linear',
+              }}
+              className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent pointer-events-none"
+            />
+          </div>
           {/* Milestone markers */}
-          {[25, 50, 75, 100].map((milestone) => {
+          {[50, 75, 100].map((milestone) => {
             const isReached = progress >= milestone;
             return (
               <motion.div
                 key={milestone}
-                className="absolute top-1/2 -translate-y-1/2 w-3 h-3 rounded-full border-2 bg-white"
+                className="absolute w-4 h-4 rounded-full border-2 bg-white z-10"
                 style={{
                   left: `${milestone}%`,
-                  transform: 'translate(-50%, -50%)',
+                  top: '50%',
+                  marginLeft: '-8px',
+                  marginTop: '-8px',
                   borderColor: isReached ? section.color : '#E5E7EB',
                   backgroundColor: isReached ? section.color : '#FFFFFF',
                 }}
@@ -234,11 +230,14 @@ export default function ProgressBar({
                     `0 0 0 0 ${section.color}40`,
                     `0 0 0 8px ${section.color}00`,
                   ],
-                } : {}}
+                } : {
+                  scale: 1,
+                }}
                 transition={{
                   duration: 0.6,
                   ease: "easeOut",
                 }}
+                initial={false}
               />
             );
           })}

@@ -145,25 +145,6 @@ const QuestionPage = forwardRef<HTMLDivElement, QuestionPageProps>(({
         />
       )}
 
-      {/* Logo - Top Left - Only show when welcome and section are completed */}
-      {!showWelcome && !showSectionIntro && welcomeCompleted && sectionCompleted && (
-        <motion.div 
-          className="absolute top-24 left-6 z-10"
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{
-            duration: 0.6,
-            delay: 0.2,
-            ease: [0.16, 1, 0.3, 1],
-          }}
-        >
-          <img
-            src="/societe-des-boissons-du-maroc--600-removebg-preview.png"
-            alt="SBM Logo"
-            className="h-16 w-auto object-contain"
-          />
-        </motion.div>
-      )}
 
       {/* Page Content - Always render but hide when welcome or section is showing */}
       <motion.div 

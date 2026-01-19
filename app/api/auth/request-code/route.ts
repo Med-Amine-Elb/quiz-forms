@@ -59,29 +59,42 @@ export async function POST(request: NextRequest) {
       console.log('[request-code] Verification code generated and saved');
     }
     
-    // Send email asynchronously in the background - don't wait for it
-    // Use Promise.resolve().then() to ensure response is sent before email processing starts
-    // This makes the API response instant even if email sending takes time
-    Promise.resolve().then(() => {
-      sendVerificationEmail(normalized, code).catch((error) => {
-        // Log error but don't fail the request - code is already saved
-        if (process.env.NODE_ENV !== 'production') {
-          console.error('[request-code] Failed to send verification email:', error);
-        } else {
-          console.error('[request-code] Email send failed:', error?.message || 'Unknown error');
-        }
-        // Email sending failed, but code is already saved
-        // User can request a new code if needed
+    // Send email - wait for it to complete to ensure it was sent successfully
+    try {
+      await sendVerificationEmail(normalized, code);
+      
+      if (process.env.NODE_ENV !== 'production') {
+        console.log('[request-code] Verification email sent successfully to:', normalized);
+      }
+      
+      return NextResponse.json({
+        message: 'Code envoyé',
+        ttlMs: emailVerificationConfig.ttlMs,
+        attempts: emailVerificationConfig.maxAttempts,
       });
-    });
-
-    // Return immediately - email is being sent in background
-    // This ensures fast response time (< 1s) even if email sending is slow (2-5s)
-    return NextResponse.json({
-      message: 'Code envoyé',
-      ttlMs: emailVerificationConfig.ttlMs,
-      attempts: emailVerificationConfig.maxAttempts,
-    });
+    } catch (emailError: any) {
+      // Log the error with details
+      console.error('[request-code] Failed to send verification email:', emailError);
+      
+      // Clean up the saved code since email failed
+      try {
+        const { clearCode } = await import('@/lib/emailVerification');
+        clearCode(normalized);
+      } catch (cleanupError) {
+        // Ignore cleanup errors
+      }
+      
+      // Return error response
+      return createErrorResponse(
+        emailError,
+        500,
+        { 
+          code: 'EMAIL_SEND_FAILED', 
+          context: 'POST /api/auth/request-code', 
+          customMessage: 'Échec de l\'envoi de l\'email. Veuillez vérifier votre configuration SMTP ou réessayer plus tard.' 
+        }
+      );
+    }
   } catch (error: any) {
     return handleApiError(error, 'POST /api/auth/request-code');
   }

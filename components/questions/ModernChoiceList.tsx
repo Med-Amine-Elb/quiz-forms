@@ -31,6 +31,8 @@ export default function ModernChoiceList({
   isFirstQuestion = false,
   questionId,
 }: ModernChoiceListProps) {
+  // Ensure accentColor is always defined
+  const finalAccentColor = accentColor || '#0EA5E9';
   // Stack vertically for 3 or fewer choices
   const isVerticalLayout = choices.length <= 3;
   const [hoveredChoiceId, setHoveredChoiceId] = useState<string | null>(null);
@@ -65,7 +67,7 @@ export default function ModernChoiceList({
           description={hoveredChoice.description}
           icon={hoveredChoice.icon}
           emoji={hoveredChoice.emoji}
-          accentColor={accentColor}
+          accentColor={finalAccentColor}
           isVisible={!!hoveredChoiceId}
         />
       )}
@@ -115,7 +117,7 @@ export default function ModernChoiceList({
                 handleTruncationChange(choice.id, isTruncated);
               }}
               index={0} // Set to 0 since we're handling stagger in parent
-              accentColor={accentColor}
+              accentColor={finalAccentColor}
               icon={(choice as any).icon}
               isFirstQuestion={isFirstQuestion}
               emoji={choice.emoji}

@@ -27,7 +27,7 @@ export function getVerificationEmailTemplate(code: string, baseUrl?: string): { 
   </style>
   <![endif]-->
 </head>
-<body style="margin: 0; padding: 0; background-color: #E0F2FE; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;">
+<body style="margin: 0; padding: 0; background-color: #E0F2FE; font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, 'Roboto', 'Helvetica Neue', Arial, sans-serif;">
   <!--[if mso]>
   <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background-color: #E0F2FE;">
   <![endif]-->
@@ -356,8 +356,7 @@ Si vous avez des questions, contactez votre administrateur IT.
   return { html, text };
 }
 
-export function getConfirmationEmailTemplate(nom: string, prenom: string, baseUrl?: string): { html: string; text: string } {
-  const fullName = `${prenom} ${nom}`;
+export function getConfirmationEmailTemplate(baseUrl?: string): { html: string; text: string } {
   // Use baseUrl if provided, otherwise use a placeholder that will be replaced with the actual domain
   const logoUrl = baseUrl 
     ? `${baseUrl}/societe-des-boissons-du-maroc--600-removebg-preview.png`
@@ -377,7 +376,7 @@ export function getConfirmationEmailTemplate(nom: string, prenom: string, baseUr
   </style>
   <![endif]-->
 </head>
-<body style="margin: 0; padding: 0; background: linear-gradient(216deg, rgba(224, 242, 254, 1) 16%, rgba(186, 230, 253, 1) 82%, rgba(125, 211, 252, 1) 100%); font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;">
+<body style="margin: 0; padding: 0; background: linear-gradient(216deg, rgba(224, 242, 254, 1) 16%, rgba(186, 230, 253, 1) 82%, rgba(125, 211, 252, 1) 100%); font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, 'Roboto', 'Helvetica Neue', Arial, sans-serif;">
   <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background: linear-gradient(216deg, rgba(224, 242, 254, 1) 16%, rgba(186, 230, 253, 1) 82%, rgba(125, 211, 252, 1) 100%);">
     <tr>
       <td align="center" style="padding: 40px 20px;">
@@ -428,7 +427,7 @@ export function getConfirmationEmailTemplate(nom: string, prenom: string, baseUr
             <td style="padding: 50px 40px;">
               <!-- Greeting -->
               <p style="margin: 0 0 25px 0; color: #1f2937; font-size: 18px; line-height: 1.7; font-weight: 500;">
-                Bonjour <strong style="background: linear-gradient(135deg, #0EA5E9 0%, #8B5CF6 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">${fullName}</strong>,
+                Bonjour,
               </p>
               <p style="margin: 0 0 35px 0; color: #4b5563; font-size: 16px; line-height: 1.8;">
                 Nous vous remercions sincèrement d'avoir pris le temps de participer à notre enquête de satisfaction. 
@@ -465,26 +464,6 @@ export function getConfirmationEmailTemplate(nom: string, prenom: string, baseUr
                   📋 Informations enregistrées
                 </p>
                 <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
-                  <tr>
-                    <td style="padding: 12px 0; border-bottom: 1px solid #e5e7eb;">
-                      <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
-                        <tr>
-                          <td style="width: 120px; color: #6b7280; font-size: 14px; font-weight: 500;">Nom :</td>
-                          <td style="color: #1f2937; font-size: 14px; font-weight: 600;">${nom}</td>
-                        </tr>
-                      </table>
-                    </td>
-                  </tr>
-                  <tr>
-                    <td style="padding: 12px 0; border-bottom: 1px solid #e5e7eb;">
-                      <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
-                        <tr>
-                          <td style="width: 120px; color: #6b7280; font-size: 14px; font-weight: 500;">Prénom :</td>
-                          <td style="color: #1f2937; font-size: 14px; font-weight: 600;">${prenom}</td>
-                        </tr>
-                      </table>
-                    </td>
-                  </tr>
                   <tr>
                     <td style="padding: 12px 0;">
                       <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
@@ -589,7 +568,7 @@ export function getConfirmationEmailTemplate(nom: string, prenom: string, baseUr
   const text = `
 Confirmation de Soumission - Enquête de Satisfaction
 
-Bonjour ${fullName},
+Bonjour,
 
 Nous vous remercions sincèrement d'avoir pris le temps de participer à notre enquête de satisfaction. 
 Votre feedback est essentiel et nous aide à améliorer continuellement nos services et à mieux répondre à vos besoins.
@@ -598,8 +577,6 @@ Votre feedback est essentiel et nous aide à améliorer continuellement nos serv
 Vos réponses ont été sauvegardées et seront analysées par notre équipe dans les plus brefs délais.
 
 📋 Informations enregistrées :
-- Nom : ${nom}
-- Prénom : ${prenom}
 - Date de soumission : ${new Date().toLocaleDateString('fr-FR', { 
   day: 'numeric', 
   month: 'long', 

@@ -18,20 +18,9 @@ export default function CompletionScreen({ onReturnToStart }: CompletionScreenPr
   const titleRef = useRef<HTMLDivElement>(null);
   const subtitleRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
-  const logoRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const tl = gsap.timeline({ defaults: { ease: "power3.out" } });
-
-    // Animate logo first
-    if (logoRef.current) {
-      tl.fromTo(
-        logoRef.current,
-        { opacity: 0, y: -30 },
-        { opacity: 1, y: 0, duration: 0.8 },
-        0
-      );
-    }
 
     // Checkmark animation - scale in with bounce
     if (checkmarkRef.current) {
@@ -111,22 +100,6 @@ export default function CompletionScreen({ onReturnToStart }: CompletionScreenPr
       ref={containerRef}
       className="absolute inset-0 w-full h-full flex items-center justify-center overflow-hidden bg-gradient-to-br from-white via-gray-50 to-gray-100"
     >
-      {/* Fixed Logo - Top Left */}
-      <div 
-        ref={logoRef}
-        className="fixed top-0 left-0 right-0 z-50 px-6 md:px-12 py-6 flex items-center gap-3 opacity-0"
-      >
-        <img
-          src="/societe-des-boissons-du-maroc--600-removebg-preview.png"
-          alt="Société des Boissons du Maroc"
-          className="h-12 md:h-16 w-auto object-contain drop-shadow-lg"
-        />
-        <div className="h-12 md:h-16 w-px bg-gray-400/50"></div>
-        <span className="text-xl md:text-2xl font-bold drop-shadow-md">
-          <span className="text-blue-600">Enquête</span>
-          <span className="text-purple-600"> IT</span>
-        </span>
-      </div>
 
       {/* Decorative Background Elements */}
       <motion.div

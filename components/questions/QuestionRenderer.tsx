@@ -50,18 +50,22 @@ const RatingSlider = dynamic(() => import("./RatingSlider"), {
 interface QuestionRendererProps {
   question: Question;
   onAnswer: (answer: string | number | string[]) => void;
+  onPrevious?: () => void;
+  showPreviousButton?: boolean;
 }
 
 export default function QuestionRenderer({
   question,
   onAnswer,
+  onPrevious,
+  showPreviousButton = false,
 }: QuestionRendererProps) {
   const [selectedChoice, setSelectedChoice] = useState<string | null>(null);
   const [selectedMultipleChoices, setSelectedMultipleChoices] = useState<string[]>([]);
-  const [autreText, setAutreText] = useState<string>(""); // Text input for "Autre" option
+  const [autreText, setAutreText] = useState<string>(""); // Text input for "Autre" option (works for both single and multiple)
   const [showAutreInput, setShowAutreInput] = useState<boolean>(false); // Track if we're in "Autre" input mode
   const section = getSectionForQuestion(question.id);
-  const accentColor = section.accent;
+  const accentColor = section.accent || section.color; // Fallback to color if accent is not defined
   const isFirstQuestion = question.id === 1;
   const isLastQuestion = question.id === questions.length;
 
@@ -89,7 +93,7 @@ export default function QuestionRenderer({
     preloadQuestionType(question.type);
   }, [question.id]);
 
-  // Handle "Autre" selection - show input mode
+  // Handle "Autre" selection - show input mode (for single choice)
   useEffect(() => {
     if (selectedChoice && isAutreChoice(selectedChoice)) {
       setShowAutreInput(true);
@@ -98,6 +102,17 @@ export default function QuestionRenderer({
       setAutreText("");
     }
   }, [selectedChoice]);
+
+  // Handle "Autre" selection in multiple choice - show input if "Autre" is in selectedMultipleChoices
+  useEffect(() => {
+    const hasAutre = selectedMultipleChoices.some(id => isAutreChoice(id));
+    if (hasAutre) {
+      setShowAutreInput(true);
+    } else {
+      setShowAutreInput(false);
+      setAutreText("");
+    }
+  }, [selectedMultipleChoices]);
 
   // Handler for when "Autre" is selected
   const handleAutreSelect = (choiceId: string) => {
@@ -123,7 +138,14 @@ export default function QuestionRenderer({
         onAnswer(selectedChoice);
       }
     } else if (question.type === 'multiple' && selectedMultipleChoices.length > 0) {
-      onAnswer(selectedMultipleChoices);
+      // For multiple choice, format "Autre" answers with text
+      const formattedAnswers = selectedMultipleChoices.map(id => {
+        if (isAutreChoice(id) && autreText.trim()) {
+          return `${id}|${autreText.trim()}`;
+        }
+        return id;
+      });
+      onAnswer(formattedAnswers);
     }
   };
 
@@ -138,7 +160,13 @@ export default function QuestionRenderer({
       return false;
     }
     if (question.type === 'multiple') {
-      return selectedMultipleChoices.length === 0;
+      if (selectedMultipleChoices.length === 0) return true;
+      // If "Autre" is selected, require text input
+      const hasAutre = selectedMultipleChoices.some(id => isAutreChoice(id));
+      if (hasAutre) {
+        return !autreText.trim();
+      }
+      return false;
     }
     return true;
   };
@@ -262,15 +290,29 @@ export default function QuestionRenderer({
                       )}
                     </AnimatePresence>
                     
-                    <div className="w-full max-w-2xl mx-auto mt-8">
-                      <ContinueButton
-                        onClick={handleContinue}
-                        disabled={isContinueDisabled()}
-                        accentColor={accentColor}
-                        sectionColor={section.color}
-                      >
-                        Continuer
-                      </ContinueButton>
+                    <div className="w-full max-w-2xl mx-auto mt-8 flex gap-4">
+                      {showPreviousButton && onPrevious && (
+                        <motion.button
+                          onClick={onPrevious}
+                          whileHover={{ scale: 1.02, x: -2 }}
+                          whileTap={{ scale: 0.98 }}
+                          className="flex items-center justify-center gap-2 px-6 py-4 rounded-2xl bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold text-base sm:text-lg transition-colors duration-200 font-inter flex-shrink-0"
+                          aria-label="Retour à la question précédente"
+                        >
+                          <ArrowLeft className="w-5 h-5" />
+                          <span>Précédent</span>
+                        </motion.button>
+                      )}
+                      <div className="flex-1">
+                        <ContinueButton
+                          onClick={handleContinue}
+                          disabled={isContinueDisabled()}
+                          accentColor={accentColor}
+                          sectionColor={section.color}
+                        >
+                          Continuer
+                        </ContinueButton>
+                      </div>
                     </div>
                   </>
                 );
@@ -301,7 +343,8 @@ export default function QuestionRenderer({
                           onContinue={handleContinue}
                           accentColor={accentColor}
                           sectionColor={section.color}
-                          disabled={isContinueDisabled()}
+                          onPrevious={onPrevious}
+                          showPreviousButton={showPreviousButton}
                         />
                       </motion.div>
                     ) : (
@@ -366,15 +409,29 @@ export default function QuestionRenderer({
                         </div>
                         
                         {/* Continue Button */}
-                        <div className="w-full max-w-4xl mx-auto mt-8">
-                          <ContinueButton
-                            onClick={handleContinue}
-                            disabled={isContinueDisabled()}
-                            accentColor={accentColor}
-                            sectionColor={section.color}
-                          >
-                            Continuer
-                          </ContinueButton>
+                        <div className="w-full max-w-4xl mx-auto mt-8 flex gap-4">
+                          {showPreviousButton && onPrevious && (
+                            <motion.button
+                              onClick={onPrevious}
+                              whileHover={{ scale: 1.02, x: -2 }}
+                              whileTap={{ scale: 0.98 }}
+                              className="flex items-center justify-center gap-2 px-6 py-4 rounded-2xl bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold text-base sm:text-lg transition-colors duration-200 font-inter flex-shrink-0"
+                              aria-label="Retour à la question précédente"
+                            >
+                              <ArrowLeft className="w-5 h-5" />
+                              <span>Précédent</span>
+                            </motion.button>
+                          )}
+                          <div className="flex-1">
+                            <ContinueButton
+                              onClick={handleContinue}
+                              disabled={isContinueDisabled()}
+                              accentColor={accentColor}
+                              sectionColor={section.color}
+                            >
+                              Continuer
+                            </ContinueButton>
+                          </div>
                         </div>
                       </motion.div>
                     )}
@@ -392,73 +449,214 @@ export default function QuestionRenderer({
                   maxLength={question.maxLength}
                   isLastQuestion={isLastQuestion}
                   autoFocus={true}
+                  onPrevious={onPrevious}
+                  showPreviousButton={showPreviousButton}
                 />
               );
 
             case 'rating':
               return (
-                <RatingQuestion
-                  onContinue={onAnswer}
-                  required={question.required}
-                  accentColor={accentColor}
-                />
+                <>
+                  <RatingQuestion
+                    onContinue={onAnswer}
+                    required={question.required}
+                    accentColor={accentColor}
+                  />
+                  {showPreviousButton && onPrevious && (
+                    <div className="w-full max-w-2xl mx-auto mt-8 flex gap-4">
+                      <motion.button
+                        onClick={onPrevious}
+                        whileHover={{ scale: 1.02, x: -2 }}
+                        whileTap={{ scale: 0.98 }}
+                        className="flex items-center justify-center gap-2 px-6 py-4 rounded-2xl bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold text-base sm:text-lg transition-colors duration-200 font-inter flex-shrink-0"
+                        aria-label="Retour à la question précédente"
+                      >
+                        <ArrowLeft className="w-5 h-5" />
+                        <span>Précédent</span>
+                      </motion.button>
+                    </div>
+                  )}
+                </>
               );
 
             case 'satisfaction':
               return (
-                <SatisfactionRating
-                  onSelect={(value) => {
-                    setSelectedChoice(value);
-                  }}
-                  onSubmit={(value) => {
-                    onAnswer(value);
-                  }}
-                  selectedId={selectedChoice}
-                  accentColor={accentColor}
-                  sectionColor={section.color}
-                />
+                <>
+                  <SatisfactionRating
+                    onSelect={(value) => {
+                      setSelectedChoice(value);
+                    }}
+                    onSubmit={(value) => {
+                      onAnswer(value);
+                    }}
+                    selectedId={selectedChoice}
+                    accentColor={accentColor}
+                    sectionColor={section.color}
+                  />
+                  {showPreviousButton && onPrevious && (
+                    <div className="w-full max-w-2xl mx-auto mt-8 flex gap-4">
+                      <motion.button
+                        onClick={onPrevious}
+                        whileHover={{ scale: 1.02, x: -2 }}
+                        whileTap={{ scale: 0.98 }}
+                        className="flex items-center justify-center gap-2 px-6 py-4 rounded-2xl bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold text-base sm:text-lg transition-colors duration-200 font-inter flex-shrink-0"
+                        aria-label="Retour à la question précédente"
+                      >
+                        <ArrowLeft className="w-5 h-5" />
+                        <span>Précédent</span>
+                      </motion.button>
+                    </div>
+                  )}
+                </>
               );
 
             case 'multiple':
+              const hasAutreSelected = selectedMultipleChoices.some(id => isAutreChoice(id));
               return (
                 <>
-                  <div className="w-full mb-10">
-                    <MultipleChoiceList
-                      choices={question.choices || []}
-                      onSelect={handleMultipleSelect}
-                      selectedIds={selectedMultipleChoices}
-                      accentColor={accentColor}
-                      isFirstQuestion={isFirstQuestion}
-                      questionId={question.id}
-                    />
-                  </div>
-                  <div className="w-full max-w-2xl mx-auto mt-8">
-                    <ContinueButton
-                      onClick={handleContinue}
-                      disabled={selectedMultipleChoices.length === 0}
-                      accentColor={accentColor}
-                      sectionColor={section.color}
-                    >
-                      {selectedMultipleChoices.length > 0 
-                        ? `Continuer avec ${selectedMultipleChoices.length} ${selectedMultipleChoices.length === 1 ? 'sélection' : 'sélections'}`
-                        : 'Sélectionnez au moins une option'
-                      }
-                    </ContinueButton>
+                  <AnimatePresence mode="wait">
+                    {!showAutreInput ? (
+                      // Show multiple choice list
+                      <motion.div
+                        key="multiple-choices"
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        exit={{ opacity: 0, x: 20 }}
+                        transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+                        className="w-full mb-10"
+                        style={{ willChange: 'transform, opacity' }}
+                      >
+                        <MultipleChoiceList
+                          choices={question.choices || []}
+                          onSelect={handleMultipleSelect}
+                          selectedIds={selectedMultipleChoices}
+                          accentColor={accentColor}
+                          isFirstQuestion={isFirstQuestion}
+                          questionId={question.id}
+                        />
+                      </motion.div>
+                    ) : (
+                      // Show "Autre" text input with back button
+                      <motion.div
+                        key="autre-input"
+                        initial={{ opacity: 0, x: 20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        exit={{ opacity: 0, x: -20 }}
+                        transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+                        className="w-full max-w-2xl mx-auto mb-10"
+                        style={{ willChange: 'transform, opacity' }}
+                      >
+                        {/* Back Button */}
+                        <motion.button
+                          onClick={() => {
+                            setShowAutreInput(false);
+                          }}
+                          className="flex items-center gap-2 text-gray-600 hover:text-gray-900 font-inter font-semibold mb-6 transition-colors duration-200 group"
+                          whileHover={{ x: -4 }}
+                          whileTap={{ scale: 0.95 }}
+                        >
+                          <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
+                          <span>Retour aux options</span>
+                        </motion.button>
+
+                        {/* Text Input */}
+                        <div className="relative">
+                          <motion.div
+                            className="relative rounded-2xl backdrop-blur-xl border-2 overflow-hidden transition-all duration-300 bg-white/90"
+                            style={{
+                              borderColor: accentColor,
+                              boxShadow: `0 10px 40px ${accentColor}20, 0 4px 12px rgba(0,0,0,0.08)`,
+                            }}
+                          >
+                            <label
+                              htmlFor="autre-input-multiple"
+                              className="absolute left-5 top-4 pointer-events-none font-inter font-semibold text-sm flex items-center gap-2"
+                              style={{ color: accentColor }}
+                            >
+                              <span>✍️</span>
+                              Précisez votre réponse
+                            </label>
+                            <textarea
+                              id="autre-input-multiple"
+                              value={autreText}
+                              onChange={(e) => {
+                                setAutreText(e.target.value);
+                                // Auto-resize
+                                e.target.style.height = 'auto';
+                                e.target.style.height = `${Math.min(e.target.scrollHeight, 200)}px`;
+                              }}
+                              placeholder="Décrivez votre réponse..."
+                              className="w-full rounded-2xl px-5 pt-10 pb-8 border-none focus:ring-0 text-gray-900 resize-none bg-transparent focus:outline-none leading-relaxed text-base font-inter"
+                              style={{ minHeight: '120px', maxHeight: '200px', overflowY: 'auto' }}
+                              autoFocus
+                              rows={3}
+                              maxLength={500}
+                            />
+                            <div className="absolute bottom-3 right-5 text-xs text-gray-400 font-inter">
+                              {autreText.length}/500
+                            </div>
+                          </motion.div>
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                  <div className="w-full max-w-2xl mx-auto mt-8 flex gap-4">
+                    {showPreviousButton && onPrevious && (
+                      <motion.button
+                        onClick={onPrevious}
+                        whileHover={{ scale: 1.02, x: -2 }}
+                        whileTap={{ scale: 0.98 }}
+                        className="flex items-center justify-center gap-2 px-6 py-4 rounded-2xl bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold text-base sm:text-lg transition-colors duration-200 font-inter flex-shrink-0"
+                        aria-label="Retour à la question précédente"
+                      >
+                        <ArrowLeft className="w-5 h-5" />
+                        <span>Précédent</span>
+                      </motion.button>
+                    )}
+                    <div className="flex-1">
+                      <ContinueButton
+                        onClick={handleContinue}
+                        disabled={isContinueDisabled()}
+                        accentColor={accentColor}
+                        sectionColor={section.color}
+                      >
+                        {isContinueDisabled()
+                          ? (hasAutreSelected ? 'Veuillez remplir le champ "Autre"' : 'Sélectionnez au moins une option')
+                          : `Continuer avec ${selectedMultipleChoices.length} ${selectedMultipleChoices.length === 1 ? 'sélection' : 'sélections'}`
+                        }
+                      </ContinueButton>
+                    </div>
                   </div>
                 </>
               );
 
             case 'slider':
               return (
-                <RatingSlider
-                  onContinue={onAnswer}
-                  required={question.required}
-                  accentColor={accentColor}
-                  sectionColor={section.color}
-                  min={question.sliderConfig?.min}
-                  max={question.sliderConfig?.max}
-                  labels={question.sliderConfig?.labels}
-                />
+                <>
+                  <RatingSlider
+                    onContinue={onAnswer}
+                    required={question.required}
+                    accentColor={accentColor}
+                    sectionColor={section.color}
+                    min={question.sliderConfig?.min}
+                    max={question.sliderConfig?.max}
+                    labels={question.sliderConfig?.labels}
+                  />
+                  {showPreviousButton && onPrevious && (
+                    <div className="w-full max-w-2xl mx-auto mt-8 flex gap-4">
+                      <motion.button
+                        onClick={onPrevious}
+                        whileHover={{ scale: 1.02, x: -2 }}
+                        whileTap={{ scale: 0.98 }}
+                        className="flex items-center justify-center gap-2 px-6 py-4 rounded-2xl bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold text-base sm:text-lg transition-colors duration-200 font-inter flex-shrink-0"
+                        aria-label="Retour à la question précédente"
+                      >
+                        <ArrowLeft className="w-5 h-5" />
+                        <span>Précédent</span>
+                      </motion.button>
+                    </div>
+                  )}
+                </>
               );
 
             default:

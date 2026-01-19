@@ -12,8 +12,6 @@ interface SubmissionConfirmationModalProps {
   onClose: () => void;
   onConfirm: () => void;
   answers: QuestionAnswer[];
-  nom: string;
-  prenom: string;
   email: string;
   isSubmitting?: boolean;
 }
@@ -23,8 +21,6 @@ export default function SubmissionConfirmationModal({
   onClose,
   onConfirm,
   answers,
-  nom,
-  prenom,
   email,
   isSubmitting = false,
 }: SubmissionConfirmationModalProps) {
@@ -147,15 +143,7 @@ export default function SubmissionConfirmationModal({
                 {/* User Info */}
                 <div className="mb-6 p-4 bg-gray-50 rounded-xl">
                   <h3 className="font-semibold text-gray-900 mb-3">Informations personnelles</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
-                    <div>
-                      <span className="text-gray-600">Nom:</span>
-                      <p className="font-medium text-gray-900">{nom || "Non renseigné"}</p>
-                    </div>
-                    <div>
-                      <span className="text-gray-600">Prénom:</span>
-                      <p className="font-medium text-gray-900">{prenom || "Non renseigné"}</p>
-                    </div>
+                  <div className="text-sm">
                     <div>
                       <span className="text-gray-600">Email:</span>
                       <p className="font-medium text-gray-900">{email || "Non renseigné"}</p>

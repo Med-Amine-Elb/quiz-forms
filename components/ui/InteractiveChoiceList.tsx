@@ -298,8 +298,10 @@ export default function InteractiveChoiceList({
   choices,
   onSelect,
   selectedId,
-  accentColor = '#0EA5E9',
+  accentColor,
 }: InteractiveChoiceListProps) {
+  // Ensure accentColor is always defined
+  const finalAccentColor = accentColor || '#0EA5E9';
   const [hoveredChoiceId, setHoveredChoiceId] = useState<string | null>(null);
   const [truncatedChoices, setTruncatedChoices] = useState<Set<string>>(new Set());
   const hoveredChoice = choices.find(c => c.id === hoveredChoiceId);
@@ -332,7 +334,7 @@ export default function InteractiveChoiceList({
           description={hoveredChoice.description}
           icon={hoveredChoice.icon}
           emoji={hoveredChoice.emoji}
-          accentColor={accentColor}
+          accentColor={finalAccentColor}
           isVisible={!!hoveredChoiceId}
         />
       )}
@@ -345,7 +347,7 @@ export default function InteractiveChoiceList({
               choice={choice}
               index={index}
               isSelected={selectedId === choice.id}
-              accentColor={accentColor}
+              accentColor={finalAccentColor}
               onSelect={() => onSelect(choice.id)}
               onHover={(isHovered) => setHoveredChoiceId(isHovered ? choice.id : null)}
               onTruncationChange={(isTruncated) => handleTruncationChange(choice.id, isTruncated)}

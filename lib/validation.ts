@@ -35,18 +35,6 @@ export const answerSchema = z.object({
  * Submit request schema - validates the entire submission
  */
 export const submitRequestSchema = z.object({
-  nom: z
-    .string()
-    .min(2, 'Le nom doit contenir au moins 2 caractères')
-    .max(50, 'Le nom ne peut pas dépasser 50 caractères')
-    .regex(nameRegex, 'Le nom ne peut contenir que des lettres, espaces, tirets et apostrophes')
-    .transform((val) => val.trim()), // Trim whitespace
-  prenom: z
-    .string()
-    .min(2, 'Le prénom doit contenir au moins 2 caractères')
-    .max(50, 'Le prénom ne peut pas dépasser 50 caractères')
-    .regex(nameRegex, 'Le prénom ne peut contenir que des lettres, espaces, tirets et apostrophes')
-    .transform((val) => val.trim()), // Trim whitespace
   email: z
     .string()
     .email('Format d\'email invalide')
