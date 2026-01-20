@@ -30,18 +30,7 @@ import { debounce } from '@/lib/utils'
 //   }
 // )
 
-// Lottie Character - Much lighter than 3D Avatar!
-const LottieCharacter = dynamic(
-  () => import('@/components/animations/LottieCharacter'),
-  { 
-    ssr: false, 
-    loading: () => (
-      <div className="flex items-center justify-center w-full h-full">
-        <div className="w-12 h-12 border-3 border-white/20 border-t-white/60 rounded-full animate-spin" />
-      </div>
-    )
-  }
-)
+// Lottie Character removed - no longer used
 
 const CompletionScreen = dynamic(
   () => import('@/components/questions/CompletionScreen'),
@@ -74,7 +63,6 @@ export default function SurveyLanding() {
   // const avatarRef = useRef(null)
   const currentPageRef = useRef(null)
   const nextPageRef = useRef(null)
-  const nextPageAvatarRef = useRef(null)
   const loaderRef = useRef(null)
   const [submitted, setSubmitted] = useState(false)
   const [showError, setShowError] = useState(false)
@@ -368,9 +356,7 @@ export default function SurveyLanding() {
   
   const questionContentRef = useRef<HTMLDivElement>(null)
   const lastSectionRef = useRef<string | null>(null)
-  // Track last answer emoji for Lottie reactions
-  const [lastAnswerEmoji, setLastAnswerEmoji] = useState<string | undefined>(undefined);
-  const [isAvatarHovering, setIsAvatarHovering] = useState(false);
+  // Lottie-related state removed
   
   // Use Lottie or 3D Avatar - Set to true for Lottie, false for 3D
   // const USE_LOTTIE_AVATAR = true;
@@ -480,11 +466,9 @@ export default function SurveyLanding() {
     const slideDuration = prefersReducedMotion ? 0.2 : 0.3
     const fadeDuration = prefersReducedMotion ? 0.2 : 0.35
     const contentDelay = prefersReducedMotion ? 0.05 : 0.15
-    const avatarDelay = prefersReducedMotion ? 0.05 : 0.15
 
     gsap.killTweensOf(nextPageRef.current)
     gsap.killTweensOf(questionContentRef.current)
-    gsap.killTweensOf(nextPageAvatarRef.current)
 
     requestAnimationFrame(() => {
       if (isSectionChange) {
@@ -496,9 +480,6 @@ export default function SurveyLanding() {
         })
         if (questionContentRef.current) {
           gsap.set(questionContentRef.current, { opacity: 0, y: 20 })
-        }
-        if (nextPageAvatarRef.current) {
-          gsap.set(nextPageAvatarRef.current, { opacity: 0 })
         }
 
         gsap.to(nextPageRef.current, {
@@ -516,14 +497,6 @@ export default function SurveyLanding() {
                 delay: contentDelay,
               })
             }
-            if (nextPageAvatarRef.current) {
-              gsap.to(nextPageAvatarRef.current, {
-                opacity: 1,
-                duration: fadeDuration,
-                ease: 'power2.out',
-                delay: avatarDelay,
-              })
-            }
           },
         })
       } else {
@@ -533,9 +506,6 @@ export default function SurveyLanding() {
           opacity: 1,
           clearProps: 'transform',
         })
-        if (nextPageAvatarRef.current) {
-          gsap.set(nextPageAvatarRef.current, { opacity: 1 })
-        }
         if (questionContentRef.current) {
           gsap.fromTo(
             questionContentRef.current,
@@ -598,9 +568,6 @@ export default function SurveyLanding() {
           if (questionContentRef.current) {
             gsap.set(questionContentRef.current, { opacity: 0, y: 20 })
           }
-          // if (nextPageAvatarRef.current) {
-          //   gsap.set(nextPageAvatarRef.current, { opacity: 0 })
-          // }
         }
       })
       
@@ -649,16 +616,6 @@ export default function SurveyLanding() {
                   delay: 0.15,
                 })
               }
-              
-              // Fade in avatar
-              // if (nextPageAvatarRef.current) {
-              //   gsap.to(nextPageAvatarRef.current, {
-              //     opacity: 1,
-              //     duration: 0.4,
-              //     ease: 'power2.out',
-              //     delay: 0.1,
-              //   })
-              // }
             }
           })
         }
@@ -1597,23 +1554,7 @@ export default function SurveyLanding() {
           questionNumber={currentQuestion.id}
           questionText={currentQuestion.question}
           currentQuestionIndex={currentQuestionIndex}
-          avatar={
-            <div
-              ref={nextPageAvatarRef}
-              className="opacity-0 w-full h-full flex items-center justify-center"
-              onMouseEnter={() => setIsAvatarHovering(true)}
-              onMouseLeave={() => setIsAvatarHovering(false)}
-            >
-              <LottieCharacter
-                sectionId={currentSection.id}
-                questionId={currentQuestion.id}
-                totalQuestions={totalQuestions}
-                className="w-[1200px] h-[450px]"
-                isHovering={isAvatarHovering}
-                lastAnswerEmoji={lastAnswerEmoji}
-              />
-            </div>
-          }
+          avatar={null}
         >
           <div 
             ref={questionContentRef}
@@ -1627,18 +1568,6 @@ export default function SurveyLanding() {
               onPrevious={goToPreviousQuestion}
               showPreviousButton={currentQuestionIndex > 0}
               onAnswer={(answer) => {
-                // Capture emoji for Lottie reaction with smooth delay
-                if (currentQuestion.choices) {
-                  const selectedChoice = currentQuestion.choices.find(c => c.id === answer);
-                  if (selectedChoice?.emoji) {
-                    // Small delay before showing reaction (200ms for natural feel)
-                    setTimeout(() => {
-                      setLastAnswerEmoji(selectedChoice.emoji);
-                      // Clear emoji after animation completes (2.5s + 200ms delay)
-                      setTimeout(() => setLastAnswerEmoji(undefined), 2700);
-                    }, 200);
-                  }
-                }
                 goToNextQuestion(answer);
               }}
             />
