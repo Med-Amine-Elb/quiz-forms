@@ -356,7 +356,6 @@ export default function SurveyLanding() {
   
   const questionContentRef = useRef<HTMLDivElement>(null)
   const lastSectionRef = useRef<string | null>(null)
-  // Lottie-related state removed
   
   // Use Lottie or 3D Avatar - Set to true for Lottie, false for 3D
   // const USE_LOTTIE_AVATAR = true;
@@ -665,7 +664,7 @@ export default function SurveyLanding() {
       }
       
       // Animate empty input fields - shake and highlight
-      const emptyFields = []
+      const emptyFields: (HTMLElement | null)[] = []
       
       emptyFields.forEach((field, index) => {
         if (field) {
